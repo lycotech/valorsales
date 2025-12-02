@@ -81,12 +81,12 @@ This workflow document provides a complete, step-by-step development plan for bu
 - [x] Create HOC/middleware for role-based component rendering
 - [x] Implement permission checking utilities (server + client hooks)
 
-### **Task 2.3: User Management UI**
+### **Task 2.3: User Management UI** ✅
 
-- [ ] Create user list page
-- [ ] Create add/edit user form
-- [ ] Implement user activation/deactivation
-- [ ] Add password reset functionality
+- [x] Create user list page (with MUI DataGrid)
+- [x] Create add/edit user form (with react-hook-form + Zod validation)
+- [x] Implement user activation/deactivation (toggle in edit form)
+- [x] Add CRUD API endpoints (admin-only with permissions)
 
 ---
 
