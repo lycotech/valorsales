@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
 
 import { loginSchema } from '@/types'
 import { prisma } from '@/lib/db/client'
@@ -17,12 +18,13 @@ export async function POST(request: NextRequest) {
 
     // 1. Validate credentials with Zod
     const validation = loginSchema.safeParse(body)
+
     if (!validation.success) {
       return NextResponse.json(
         {
           success: false,
           error: 'Validation failed',
-          message: validation.error.errors[0].message
+          message: validation.error.issues[0].message
         },
         { status: 400 }
       )
@@ -60,6 +62,7 @@ export async function POST(request: NextRequest) {
 
     // 4. Verify password
     const isPasswordValid = await verifyPassword(password, user.password)
+
     if (!isPasswordValid) {
       return NextResponse.json(
         {
@@ -84,11 +87,8 @@ export async function POST(request: NextRequest) {
 
     const token = generateToken(userWithoutPassword)
 
-    // 6. Set authentication cookie
-    await setAuthCookie(token)
-
-    // 7. Return user data and token
-    return NextResponse.json(
+    // 6. Create response with user data
+    const response = NextResponse.json(
       {
         success: true,
         message: 'Login successful',
@@ -99,9 +99,25 @@ export async function POST(request: NextRequest) {
       },
       { status: 200 }
     )
+
+    // 7. Set authentication cookie in the response
+    response.cookies.set({
+      name: 'auth_token',
+      value: token,
+      httpOnly: true,
+      secure: false, // Set to true in production
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/'
+    })
+
+    console.log('✅ Login successful - Cookie set for:', user.email)
+
+    return response
   } catch (error) {
     console.error('Login error:', error)
-    return NextResponse.json(
+
+return NextResponse.json(
       {
         success: false,
         error: 'Internal server error',

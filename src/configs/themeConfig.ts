@@ -50,7 +50,7 @@ export type Config = {
 }
 
 const themeConfig: Config = {
-  templateName: 'Materialize',
+  templateName: 'ValorSales',
   homePageUrl: '/home',
   settingsCookieName: 'materialize-mui-next-demo-1',
   mode: 'system', // 'system', 'light', 'dark'

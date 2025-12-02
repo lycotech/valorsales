@@ -6,7 +6,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-import { verifyToken } from './lib/auth/jwt'
+import { verifyTokenEdge } from '@/lib/auth/jwt'
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = ['/login', '/api/auth/login']
@@ -17,7 +17,7 @@ const PUBLIC_API_ROUTES = ['/api/auth/login', '/api/health']
 /**
  * Middleware function to protect routes
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Allow public routes
@@ -33,6 +33,8 @@ export function middleware(request: NextRequest) {
   // Check for authentication token
   const token = request.cookies.get('auth_token')?.value
 
+  console.log('🔍 Middleware check:', { pathname, hasToken: !!token })
+
   // Redirect to login if no token for protected pages
   if (!token && !pathname.startsWith('/api')) {
     const loginUrl = new URL('/login', request.url)
@@ -44,10 +46,14 @@ export function middleware(request: NextRequest) {
 
   // Verify token
   if (token) {
-    const payload = verifyToken(token)
+    const payload = await verifyTokenEdge(token)
+
+    console.log('🔐 Token verification:', { isValid: !!payload, payload })
 
     if (!payload) {
       // Token is invalid or expired
+      console.log('❌ Token verification failed')
+
       if (pathname.startsWith('/api')) {
         return NextResponse.json(
           {

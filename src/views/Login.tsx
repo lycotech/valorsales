@@ -14,7 +14,8 @@ import InputAdornment from '@mui/material/InputAdornment'
 import Checkbox from '@mui/material/Checkbox'
 import Button from '@mui/material/Button'
 import FormControlLabel from '@mui/material/FormControlLabel'
-import Divider from '@mui/material/Divider'
+import Alert from '@mui/material/Alert'
+import CircularProgress from '@mui/material/CircularProgress'
 
 // Third-party Imports
 import classnames from 'classnames'
@@ -36,6 +37,10 @@ import { useSettings } from '@core/hooks/useSettings'
 const LoginV2 = ({ mode }: { mode: Mode }) => {
   // States
   const [isPasswordShown, setIsPasswordShown] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   // Vars
   const darkImg = '/images/pages/auth-v2-mask-1-dark.png'
@@ -60,6 +65,36 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
 
   const handleClickShowPassword = () => setIsPasswordShown(show => !show)
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error('Login error:', data)
+        setError(data.message || data.error || 'Invalid email or password')
+        setLoading(false)
+        return
+      }
+
+      // Use window.location for full page reload to ensure cookie is applied
+      window.location.href = '/home'
+    } catch (err) {
+      console.error('Login exception:', err)
+      setError(`An error occurred: ${err instanceof Error ? err.message : 'Please try again.'}`)
+      setLoading(false)
+    }
+  }
+
   return (
     <div className='flex bs-full justify-center'>
       <div
@@ -77,7 +112,7 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
             className='max-bs-[673px] max-is-full bs-auto'
           />
         </div>
-        <img src={authBackground} className='absolute bottom-[4%] z-[-1] is-full max-md:hidden' />
+        <img src={authBackground} alt='auth-background' className='absolute bottom-[4%] z-[-1] is-full max-md:hidden' />
       </div>
       <div className='flex justify-center items-center bs-full bg-backgroundPaper !min-is-full p-6 md:!min-is-[unset] md:p-12 md:is-[480px]'>
         <Link className='absolute block-start-5 sm:block-start-[38px] inline-start-6 sm:inline-start-[38px]'>
@@ -85,23 +120,36 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
         </Link>
         <div className='flex flex-col gap-5 is-full sm:is-auto md:is-full sm:max-is-[400px] md:max-is-[unset] mbs-11 sm:mbs-14 md:mbs-0'>
           <div>
-            <Typography variant='h4'>{`Welcome to ${themeConfig.templateName}! 👋🏻`}</Typography>
+            <Typography variant='h4'>Welcome to ValorSales! 👋🏻</Typography>
             <Typography className='mbs-1'>Please sign-in to your account and start the adventure</Typography>
           </div>
+          {error && (
+            <Alert severity='error' onClose={() => setError('')}>
+              {error}
+            </Alert>
+          )}
           <form
             noValidate
             autoComplete='off'
-            onSubmit={e => {
-              e.preventDefault()
-              router.push('/')
-            }}
+            onSubmit={handleSubmit}
             className='flex flex-col gap-5'
           >
-            <TextField autoFocus fullWidth label='Email' />
+            <TextField
+              autoFocus
+              fullWidth
+              label='Email'
+              type='email'
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              disabled={loading}
+            />
             <TextField
               fullWidth
               label='Password'
               type={isPasswordShown ? 'text' : 'password'}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              disabled={loading}
               slotProps={{
                 input: {
                   endAdornment: (
@@ -111,6 +159,7 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
                         edge='end'
                         onClick={handleClickShowPassword}
                         onMouseDown={e => e.preventDefault()}
+                        disabled={loading}
                       >
                         <i className={isPasswordShown ? 'ri-eye-off-line' : 'ri-eye-line'} />
                       </IconButton>
@@ -120,35 +169,11 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
               }}
             />
             <div className='flex justify-between items-center flex-wrap gap-x-3 gap-y-1'>
-              <FormControlLabel control={<Checkbox />} label='Remember me' />
-              <Typography className='text-end' color='primary.main' component={Link}>
-                Forgot password?
-              </Typography>
+              <FormControlLabel control={<Checkbox disabled={loading} />} label='Remember me' />
             </div>
-            <Button fullWidth variant='contained' type='submit'>
-              Log In
+            <Button fullWidth variant='contained' type='submit' disabled={loading}>
+              {loading ? <CircularProgress size={24} color='inherit' /> : 'Log In'}
             </Button>
-            <div className='flex justify-center items-center flex-wrap gap-2'>
-              <Typography>New on our platform?</Typography>
-              <Typography component={Link} color='primary.main'>
-                Create an account
-              </Typography>
-            </div>
-            <Divider className='gap-3 text-textPrimary'>or</Divider>
-            <div className='flex justify-center items-center gap-2'>
-              <IconButton size='small' className='text-facebook'>
-                <i className='ri-facebook-fill' />
-              </IconButton>
-              <IconButton size='small' className='text-twitter'>
-                <i className='ri-twitter-fill' />
-              </IconButton>
-              <IconButton size='small' className='text-textPrimary'>
-                <i className='ri-github-fill' />
-              </IconButton>
-              <IconButton size='small' className='text-googlePlus'>
-                <i className='ri-google-fill' />
-              </IconButton>
-            </div>
           </form>
         </div>
       </div>

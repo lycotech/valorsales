@@ -4,12 +4,18 @@
  */
 
 import jwt from 'jsonwebtoken'
+import { jwtVerify } from 'jose'
 
 import type { UserWithoutPassword } from '@/types'
 
 // JWT Secret - In production, this should be a strong secret from environment variables
 const JWT_SECRET: string = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '7d'
+
+// Convert secret to Uint8Array for jose
+const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET)
+
+console.log('🔑 JWT_SECRET loaded:', JWT_SECRET ? `${JWT_SECRET.substring(0, 10)}...` : 'NOT SET')
 
 export interface JWTPayload {
   userId: string
@@ -39,17 +45,53 @@ export function generateToken(user: UserWithoutPassword): string {
 }
 
 /**
- * Verify and decode a JWT token
+ * Verify and decode a JWT token (Node.js version - for API routes)
  * @param token - JWT token string
  * @returns Decoded payload or null if invalid
  */
 export function verifyToken(token: string): JWTPayload | null {
   try {
+    console.log('🔓 Verifying token with secret:', JWT_SECRET.substring(0, 10) + '...')
     const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload
+
+    console.log('✅ Token verified successfully:', decoded)
 
     return decoded
   } catch (error) {
     // Token is invalid or expired
+    console.error('❌ Token verification error:', error instanceof Error ? error.message : error)
+
+    return null
+  }
+}
+
+/**
+ * Verify and decode a JWT token (Edge Runtime version - for middleware)
+ * @param token - JWT token string
+ * @returns Promise with decoded payload or null if invalid
+ */
+export async function verifyTokenEdge(token: string): Promise<JWTPayload | null> {
+  try {
+    console.log('🔓 Verifying token (Edge) with secret:', JWT_SECRET.substring(0, 10) + '...')
+    const { payload } = await jwtVerify(token, JWT_SECRET_KEY)
+
+    console.log('✅ Token verified successfully (Edge):', payload)
+    
+    // Extract and validate our custom payload fields
+    if (payload.userId && payload.email && payload.role) {
+      return {
+        userId: payload.userId as string,
+        email: payload.email as string,
+        role: payload.role as string,
+        iat: payload.iat,
+        exp: payload.exp
+      }
+    }
+    
+    return null
+  } catch (error) {
+    // Token is invalid or expired
+    console.error('❌ Token verification error (Edge):', error instanceof Error ? error.message : error)
 
     return null
   }
@@ -66,7 +108,6 @@ export function decodeToken(token: string): JWTPayload | null {
 
     return decoded
   } catch (error) {
-
     return null
   }
 }
