@@ -37,8 +37,31 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
   },
   {
     label: 'Sales',
-    href: '/sales',
-    icon: 'ri-shopping-cart-line'
+    icon: 'ri-shopping-cart-line',
+    children: [
+      {
+        label: 'All Sales',
+        href: '/sales'
+      },
+      {
+        label: 'Outstanding Balances',
+        href: '/sales/outstanding'
+      }
+    ]
+  },
+  {
+    label: 'Purchases',
+    icon: 'ri-shopping-basket-line',
+    children: [
+      {
+        label: 'All Purchases',
+        href: '/purchases'
+      },
+      {
+        label: 'Supplier Payables',
+        href: '/purchases/payables'
+      }
+    ]
   },
   {
     label: 'Settings',

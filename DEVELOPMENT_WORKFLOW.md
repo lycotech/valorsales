@@ -203,14 +203,14 @@ This workflow document provides a complete, step-by-step development plan for bu
 
 ### **Task 4.3: Customer Outstanding Balances**
 
-- [ ] **Database Layer:**
+- [x] **Database Layer:**
   - Create API to fetch outstanding balances by customer
   - Aggregate all unpaid/partially paid sales
-- [ ] **UI Components:**
+- [x] **UI Components:**
   - Create customer outstanding page (`/app/(dashboard)/sales/outstanding/page.tsx`)
   - Display customer-wise balance summary
   - Add drill-down to individual transactions
-- [ ] **Business Logic:**
+- [x] **Business Logic:**
   - Calculate total outstanding per customer
   - Show aging of receivables (optional)
   - Filter by date range
@@ -221,47 +221,47 @@ This workflow document provides a complete, step-by-step development plan for bu
 
 ### **Task 5.1: Raw Material Purchase Recording**
 
-- [ ] **Database Layer:**
+- [x] **Database Layer:**
   - Create Purchase API routes (`/app/api/purchases/route.ts`)
   - Implement purchase transaction creation
   - Add payment tracking for suppliers
-- [ ] **UI Components:**
+- [x] **UI Components:**
   - Create purchase entry page (`/app/(dashboard)/purchases/new/page.tsx`)
   - Implement raw material dropdown with search
   - Add auto-calculation for totals
   - Add date picker for purchase date
   - Handle partial payments
-- [ ] **Business Logic:**
+- [x] **Business Logic:**
   - Auto-calculate balance payable (Total - Amount Paid)
   - Validate payment amounts
   - Support multiple payments over time
 
 ### **Task 5.2: Purchase Management & Updates**
 
-- [ ] **Database Layer:**
+- [x] **Database Layer:**
   - Create API routes for updating purchases
   - Implement payment update functionality
   - Add audit trail
-- [ ] **UI Components:**
+- [x] **UI Components:**
   - Create purchase list page (`/app/(dashboard)/purchases/page.tsx`)
   - Create purchase detail/edit page
   - Add payment update form
   - Show payment history
-- [ ] **Business Logic:**
+- [x] **Business Logic:**
   - Track partial payments
   - Update balance after payments
   - Maintain audit log
 
 ### **Task 5.3: Supplier Outstanding Payables**
 
-- [ ] **Database Layer:**
+- [x] **Database Layer:**
   - Create API to fetch outstanding payables by supplier
   - Aggregate all unpaid/partially paid purchases
-- [ ] **UI Components:**
+- [x] **UI Components:**
   - Create supplier payables page (`/app/(dashboard)/purchases/payables/page.tsx`)
   - Display supplier-wise payable summary
   - Add drill-down to individual purchases
-- [ ] **Business Logic:**
+- [x] **Business Logic:**
   - Calculate total payable per supplier
   - Show aging of payables (optional)
   - Filter by date range
