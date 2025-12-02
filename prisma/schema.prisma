@@ -1,0 +1,213 @@
+// Prisma Schema for Inventory, Sales & Supplier Management System
+// Database: MySQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ============================================
+// USER MANAGEMENT
+// ============================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   // 'admin', 'sales', 'procurement', 'management'
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+  @@index([email])
+  @@index([role])
+}
+
+// ============================================
+// MASTER DATA
+// ============================================
+
+model Customer {
+  id           String   @id @default(uuid())
+  customerCode String   @unique
+  businessName String
+  address      String   @db.Text
+  phone        String
+  location     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  sales        Sale[]
+
+  @@map("customers")
+  @@index([customerCode])
+  @@index([businessName])
+}
+
+model Supplier {
+  id           String         @id @default(uuid())
+  supplierCode String         @unique
+  name         String
+  address      String         @db.Text
+  phone        String
+  location     String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  items        SupplierItem[]
+  purchases    Purchase[]
+
+  @@map("suppliers")
+  @@index([supplierCode])
+  @@index([name])
+}
+
+model SupplierItem {
+  id         String   @id @default(uuid())
+  itemCode   String   @unique
+  itemName   String
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("supplier_items")
+  @@index([supplierId])
+  @@index([itemCode])
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  productCode String   @unique
+  productName String
+  price       Decimal? @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sales       Sale[]
+
+  @@map("products")
+  @@index([productCode])
+  @@index([productName])
+}
+
+model RawMaterial {
+  id           String     @id @default(uuid())
+  materialCode String     @unique
+  materialName String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  purchases    Purchase[]
+
+  @@map("raw_materials")
+  @@index([materialCode])
+  @@index([materialName])
+}
+
+// ============================================
+// TRANSACTIONS
+// ============================================
+
+model Sale {
+  id          String        @id @default(uuid())
+  customerId  String
+  customer    Customer      @relation(fields: [customerId], references: [id])
+  productId   String
+  product     Product       @relation(fields: [productId], references: [id])
+  quantity    Decimal       @db.Decimal(10, 2)
+  price       Decimal       @db.Decimal(10, 2)
+  total       Decimal       @db.Decimal(10, 2)
+  supplyDate  DateTime
+  paymentMode String        // 'cash', 'transfer', 'pos', 'credit', 'others'
+  amountPaid  Decimal       @db.Decimal(10, 2)
+  balance     Decimal       @db.Decimal(10, 2)
+  paymentDate DateTime?
+  status      String        @default("pending") // 'pending', 'partial', 'paid'
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  payments    SalePayment[]
+
+  @@map("sales")
+  @@index([customerId])
+  @@index([productId])
+  @@index([status])
+  @@index([supplyDate])
+}
+
+model SalePayment {
+  id          String   @id @default(uuid())
+  saleId      String
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  amount      Decimal  @db.Decimal(10, 2)
+  paymentDate DateTime
+  paymentMode String
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@map("sale_payments")
+  @@index([saleId])
+  @@index([paymentDate])
+}
+
+model Purchase {
+  id            String            @id @default(uuid())
+  supplierId    String
+  supplier      Supplier          @relation(fields: [supplierId], references: [id])
+  rawMaterialId String
+  rawMaterial   RawMaterial       @relation(fields: [rawMaterialId], references: [id])
+  quantity      Decimal           @db.Decimal(10, 2)
+  totalAmount   Decimal           @db.Decimal(10, 2)
+  amountPaid    Decimal           @db.Decimal(10, 2)
+  balance       Decimal           @db.Decimal(10, 2)
+  purchaseDate  DateTime
+  status        String            @default("pending") // 'pending', 'partial', 'paid'
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  payments      PurchasePayment[]
+
+  @@map("purchases")
+  @@index([supplierId])
+  @@index([rawMaterialId])
+  @@index([status])
+  @@index([purchaseDate])
+}
+
+model PurchasePayment {
+  id          String   @id @default(uuid())
+  purchaseId  String
+  purchase    Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  amount      Decimal  @db.Decimal(10, 2)
+  paymentDate DateTime
+  paymentMode String
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@map("purchase_payments")
+  @@index([purchaseId])
+  @@index([paymentDate])
+}
+
+// ============================================
+// SYSTEM TABLES
+// ============================================
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String   // 'create', 'update', 'delete'
+  entity    String   // 'customer', 'sale', 'purchase', etc.
+  entityId  String
+  oldValue  Json?
+  newValue  Json?
+  ipAddress String?
+  userAgent String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+  @@index([userId])
+  @@index([entity])
+  @@index([action])
+  @@index([createdAt])
+}

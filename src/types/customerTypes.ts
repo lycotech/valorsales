@@ -1,0 +1,119 @@
+/**
+ * Customer Type Definitions
+ */
+
+import { z } from 'zod'
+
+import type { BaseEntity } from './commonTypes'
+
+// ============================================
+// INTERFACES
+// ============================================
+
+export interface Customer extends BaseEntity {
+  customerCode: string
+  businessName: string
+  address: string
+  phone: string
+  location: string
+}
+
+export interface CreateCustomerInput {
+  businessName: string
+  address: string
+  phone: string
+  location: string
+}
+
+export interface UpdateCustomerInput {
+  businessName?: string
+  address?: string
+  phone?: string
+  location?: string
+}
+
+export interface CustomerWithStats extends Customer {
+  totalSales: number
+  totalOutstanding: number
+  lastSaleDate: Date | null
+}
+
+export interface CustomerListItem extends Customer {
+  salesCount: number
+  outstandingBalance: number
+}
+
+// ============================================
+// ZOD VALIDATION SCHEMAS
+// ============================================
+
+export const createCustomerSchema = z.object({
+  businessName: z
+    .string()
+    .min(1, 'Business name is required')
+    .min(2, 'Business name must be at least 2 characters')
+    .max(255, 'Business name too long')
+    .trim(),
+  address: z
+    .string()
+    .min(1, 'Address is required')
+    .min(5, 'Address must be at least 5 characters')
+    .max(500, 'Address too long')
+    .trim(),
+  phone: z
+    .string()
+    .min(1, 'Phone number is required')
+    .min(10, 'Phone number must be at least 10 characters')
+    .max(20, 'Phone number too long')
+    .regex(/^[0-9+\-\s()]+$/, 'Invalid phone number format')
+    .trim(),
+  location: z
+    .string()
+    .min(1, 'Location is required')
+    .min(2, 'Location must be at least 2 characters')
+    .max(255, 'Location too long')
+    .trim()
+})
+
+export const updateCustomerSchema = z.object({
+  businessName: z
+    .string()
+    .min(2, 'Business name must be at least 2 characters')
+    .max(255, 'Business name too long')
+    .trim()
+    .optional(),
+  address: z
+    .string()
+    .min(5, 'Address must be at least 5 characters')
+    .max(500, 'Address too long')
+    .trim()
+    .optional(),
+  phone: z
+    .string()
+    .min(10, 'Phone number must be at least 10 characters')
+    .max(20, 'Phone number too long')
+    .regex(/^[0-9+\-\s()]+$/, 'Invalid phone number format')
+    .trim()
+    .optional(),
+  location: z
+    .string()
+    .min(2, 'Location must be at least 2 characters')
+    .max(255, 'Location too long')
+    .trim()
+    .optional()
+})
+
+// Filter and search schemas
+export const customerFilterSchema = z.object({
+  search: z.string().optional(),
+  location: z.string().optional(),
+  hasOutstanding: z.boolean().optional(),
+  page: z.number().int().positive().optional().default(1),
+  limit: z.number().int().positive().max(100).optional().default(10)
+})
+
+// ============================================
+// TYPE EXPORTS
+// ============================================
+
+export type CustomerFilterParams = z.infer<typeof customerFilterSchema>
