@@ -20,6 +20,9 @@ export enum Resource {
   SALES = 'sales',
   PURCHASES = 'purchases',
 
+  // Inventory
+  INVENTORY = 'inventory',
+
   // Reports
   REPORTS = 'reports',
 
@@ -63,25 +66,28 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: Resource.RAW_MATERIALS, actions: [Action.MANAGE] },
     { resource: Resource.SALES, actions: [Action.MANAGE] },
     { resource: Resource.PURCHASES, actions: [Action.MANAGE] },
+    { resource: Resource.INVENTORY, actions: [Action.MANAGE] },
     { resource: Resource.REPORTS, actions: [Action.MANAGE] },
     { resource: Resource.USERS, actions: [Action.MANAGE] },
     { resource: Resource.DASHBOARD, actions: [Action.READ] }
   ],
 
-  // Sales Officer: Full access to sales and customers
+  // Sales Officer: Full access to sales and customers, read-only inventory
   [UserRole.SALES]: [
     { resource: Resource.CUSTOMERS, actions: [Action.CREATE, Action.READ, Action.UPDATE] },
     { resource: Resource.PRODUCTS, actions: [Action.READ] },
     { resource: Resource.SALES, actions: [Action.CREATE, Action.READ, Action.UPDATE] },
+    { resource: Resource.INVENTORY, actions: [Action.READ] },
     { resource: Resource.REPORTS, actions: [Action.READ, Action.EXPORT] },
     { resource: Resource.DASHBOARD, actions: [Action.READ] }
   ],
 
-  // Procurement Officer: Full access to suppliers and raw materials
+  // Procurement Officer: Full access to suppliers and raw materials, manage inventory
   [UserRole.PROCUREMENT]: [
     { resource: Resource.SUPPLIERS, actions: [Action.CREATE, Action.READ, Action.UPDATE] },
     { resource: Resource.RAW_MATERIALS, actions: [Action.CREATE, Action.READ, Action.UPDATE] },
     { resource: Resource.PURCHASES, actions: [Action.CREATE, Action.READ, Action.UPDATE] },
+    { resource: Resource.INVENTORY, actions: [Action.CREATE, Action.READ, Action.UPDATE] },
     { resource: Resource.PRODUCTS, actions: [Action.READ] },
     { resource: Resource.REPORTS, actions: [Action.READ, Action.EXPORT] },
     { resource: Resource.DASHBOARD, actions: [Action.READ] }
@@ -95,6 +101,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: Resource.RAW_MATERIALS, actions: [Action.READ] },
     { resource: Resource.SALES, actions: [Action.READ] },
     { resource: Resource.PURCHASES, actions: [Action.READ] },
+    { resource: Resource.INVENTORY, actions: [Action.READ] },
     { resource: Resource.REPORTS, actions: [Action.READ, Action.EXPORT] },
     { resource: Resource.DASHBOARD, actions: [Action.READ] }
   ]

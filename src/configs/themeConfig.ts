@@ -56,7 +56,7 @@ const themeConfig: Config = {
   mode: 'system', // 'system', 'light', 'dark'
   skin: 'default', // 'default', 'bordered'
   semiDark: false, // true, false
-  layout: 'vertical', // 'vertical', 'collapsed', 'horizontal'
+  layout: 'vertical', // 'vertical', 'collapsed', 'horizontal' - Set to 'vertical' for expanded sidebar by default
   layoutPadding: 24, // Common padding for header, content, footer layout components (in px)
   compactContentWidth: 1440, // in px
   navbar: {

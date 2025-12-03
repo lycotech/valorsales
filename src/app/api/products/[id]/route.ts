@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/auth/jwt'
-import prisma from '@/lib/db/prisma'
+import { verifyToken } from '@/lib/auth/jwt'
+import prisma from '@/lib/db/client'
 import { updateProductSchema } from '@/types/productTypes'
 import { Resource, Action } from '@/types/commonTypes'
 

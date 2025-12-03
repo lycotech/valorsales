@@ -212,21 +212,77 @@ export async function POST(request: NextRequest) {
       status = 'paid'
     }
 
-    // Create sale
-    const sale = await prisma.sale.create({
-      data: {
-        customerId: data.customerId,
-        productId: data.productId,
-        quantity: data.quantity,
-        price: data.price,
-        total,
-        supplyDate: data.supplyDate,
-        paymentMode: data.paymentMode,
-        amountPaid: data.amountPaid,
-        balance,
-        paymentDate: data.paymentDate || null,
-        status
-      },
+    // Create sale with inventory deduction in transaction
+    const sale = await prisma.$transaction(async tx => {
+      // Check inventory availability
+      const inventory = await tx.productInventory.findUnique({
+        where: { productId: data.productId }
+      })
+
+      if (!inventory) {
+        throw new Error(`No inventory record found for product ${product.productName}`)
+      }
+
+      const availableQty = Number(inventory.quantity)
+      const requiredQty = data.quantity
+
+      if (availableQty < requiredQty) {
+        throw new Error(
+          `Insufficient stock for ${product.productName}. Available: ${availableQty}, Required: ${requiredQty}`
+        )
+      }
+
+      // Create sale
+      const newSale = await tx.sale.create({
+        data: {
+          customerId: data.customerId,
+          productId: data.productId,
+          quantity: data.quantity,
+          price: data.price,
+          total,
+          supplyDate: data.supplyDate,
+          paymentMode: data.paymentMode,
+          amountPaid: data.amountPaid,
+          balance,
+          paymentDate: data.paymentDate || null,
+          status
+        },
+        include: {
+          customer: true,
+          product: true
+        }
+      })
+
+      // Deduct from inventory
+      const newQuantity = availableQty - requiredQty
+
+      await tx.productInventory.update({
+        where: { productId: data.productId },
+        data: { quantity: newQuantity }
+      })
+
+      // Create inventory transaction record
+      await tx.inventoryTransaction.create({
+        data: {
+          type: 'product',
+          productInventoryId: inventory.id,
+          transactionType: 'sale',
+          quantityChange: -requiredQty,
+          quantityBefore: availableQty,
+          quantityAfter: newQuantity,
+          referenceId: newSale.id,
+          referenceType: 'sale',
+          notes: `Stock deducted for sale to ${customer.businessName}`,
+          createdBy: payload.userId
+        }
+      })
+
+      return newSale
+    })
+
+    // Return sale with updated structure
+    const saleResponse = await prisma.sale.findUnique({
+      where: { id: sale.id },
       include: {
         customer: {
           select: {

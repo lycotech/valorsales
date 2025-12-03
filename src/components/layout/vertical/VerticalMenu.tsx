@@ -1,3 +1,8 @@
+'use client'
+
+// React Imports
+import { useMemo } from 'react'
+
 // MUI Imports
 import { useTheme } from '@mui/material/styles'
 
@@ -6,12 +11,21 @@ import PerfectScrollbar from 'react-perfect-scrollbar'
 
 // Type Imports
 import type { VerticalMenuContextProps } from '@menu/components/vertical-menu/Menu'
+import { UserRole } from '@/types/commonTypes'
 
 // Component Imports
-import { Menu, MenuItem } from '@menu/vertical-menu'
+import { Menu } from '@menu/vertical-menu'
+import { GenerateVerticalMenu } from '@components/GenerateMenu'
 
 // Hook Imports
 import useVerticalNav from '@menu/hooks/useVerticalNav'
+import { useSession } from '@/lib/auth/session-client'
+
+// Data Imports
+import verticalMenuData from '@/data/navigation/verticalMenuData'
+
+// Util Imports
+import { filterMenuByPermissions } from '@/utils/menuFilter'
 
 // Styled Component Imports
 import StyledVerticalNavExpandIcon from '@menu/styles/vertical/StyledVerticalNavExpandIcon'
@@ -39,11 +53,47 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
   // Hooks
   const theme = useTheme()
   const verticalNavOptions = useVerticalNav()
+  const { user, loading } = useSession()
 
   // Vars
   const { isBreakpointReached, transitionDuration } = verticalNavOptions
 
   const ScrollWrapper = isBreakpointReached ? 'div' : PerfectScrollbar
+
+  // Filter menu data based on user permissions
+  const filteredMenuData = useMemo(() => {
+    const menuData = verticalMenuData()
+
+    console.log('📋 Menu generation:', {
+      loading,
+      hasUser: !!user,
+      userRole: user?.role,
+      menuItemsCount: menuData.length
+    })
+
+    // While loading or no user, show full menu (will be filtered once user loads)
+    if (loading || !user) {
+      console.log('⚠️ Loading or no user, showing full menu', { loading, hasUser: !!user })
+
+      return menuData
+    }
+
+    // Filter based on user role (cast string to UserRole enum)
+    const userRole = user.role as UserRole
+
+    console.log('🔄 About to filter menu:', { userRole, userRoleType: typeof userRole })
+
+    const filtered = filterMenuByPermissions(menuData, userRole)
+
+    console.log('✅ Menu filtered:', {
+      role: user.role,
+      userRoleCasted: userRole,
+      originalCount: menuData.length,
+      filteredCount: filtered.length
+    })
+
+    return filtered
+  }, [user, loading])
 
   return (
     // eslint-disable-next-line lines-around-comment
@@ -68,22 +118,8 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
         renderExpandedMenuItemIcon={{ icon: <i className='ri-circle-fill' /> }}
         menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
       >
-        <MenuItem href='/home' icon={<i className='ri-home-smile-line' />}>
-          Home
-        </MenuItem>
-        <MenuItem href='/about' icon={<i className='ri-information-line' />}>
-          About
-        </MenuItem>
+        <GenerateVerticalMenu menuData={filteredMenuData} />
       </Menu>
-      {/* <Menu
-        popoutMenuOffset={{ mainAxis: 17 }}
-        menuItemStyles={menuItemStyles(verticalNavOptions, theme)}
-        renderExpandIcon={({ open }) => <RenderExpandIcon open={open} transitionDuration={transitionDuration} />}
-        renderExpandedMenuItemIcon={{ icon: <i className='ri-circle-fill' /> }}
-        menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
-      >
-        <GenerateVerticalMenu menuData={menuData(dictionary, params)} />
-      </Menu> */}
     </ScrollWrapper>
   )
 }

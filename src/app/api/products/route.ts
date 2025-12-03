@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuth } from '@/lib/auth/jwt'
-import prisma from '@/lib/db/prisma'
+import { verifyToken } from '@/lib/auth/jwt'
+import prisma from '@/lib/db/client'
 import { createProductSchema } from '@/types/productTypes'
 import { Resource, Action } from '@/types/commonTypes'
 
@@ -11,7 +11,7 @@ import { Resource, Action } from '@/types/commonTypes'
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication
-    const payload = await verifyAuth(request)
+    const payload = await verifyToken(request)
 
     if (!payload) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
-    const payload = await verifyAuth(request)
+    const payload = await verifyToken(request)
 
     if (!payload) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })

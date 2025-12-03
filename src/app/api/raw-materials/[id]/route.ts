@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { verifyAuth } from '@/lib/auth/jwt'
+import { verifyToken } from '@/lib/auth/jwt'
 import { prisma } from '@/lib/db/client'
 import { updateRawMaterialSchema } from '@/types/rawMaterialTypes'
 import { Resource, Action } from '@/types/commonTypes'

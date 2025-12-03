@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create purchase with optional initial payment
+    // Create purchase with optional initial payment and update inventory
     const purchase = await prisma.$transaction(async (tx: any) => {
       const newPurchase = await tx.purchase.create({
         data: {
@@ -272,6 +272,41 @@ export async function POST(request: NextRequest) {
             paymentDate: new Date(purchaseDate),
             paymentMode,
             notes: notes || 'Initial payment'
+          }
+        })
+      }
+
+      // Update raw material inventory
+      const inventory = await tx.rawMaterialInventory.findUnique({
+        where: { rawMaterialId }
+      })
+
+      if (inventory) {
+        const currentQty = Number(inventory.quantity)
+        const newQty = currentQty + qtyNum
+
+        // Update inventory
+        await tx.rawMaterialInventory.update({
+          where: { rawMaterialId },
+          data: {
+            quantity: newQty,
+            lastRestockedAt: new Date()
+          }
+        })
+
+        // Create inventory transaction record
+        await tx.inventoryTransaction.create({
+          data: {
+            type: 'raw_material',
+            rawMaterialInventoryId: inventory.id,
+            transactionType: 'purchase',
+            quantityChange: qtyNum,
+            quantityBefore: currentQty,
+            quantityAfter: newQty,
+            referenceId: newPurchase.id,
+            referenceType: 'purchase',
+            notes: `Stock added from purchase from ${supplier.name}`,
+            createdBy: payload.userId
           }
         })
       }

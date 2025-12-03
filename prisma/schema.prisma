@@ -81,13 +81,14 @@ model SupplierItem {
 }
 
 model Product {
-  id          String   @id @default(uuid())
-  productCode String   @unique
+  id          String             @id @default(uuid())
+  productCode String             @unique
   productName String
-  price       Decimal? @db.Decimal(10, 2)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  price       Decimal?           @db.Decimal(10, 2)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
   sales       Sale[]
+  inventory   ProductInventory[]
 
   @@map("products")
   @@index([productCode])
@@ -95,16 +96,85 @@ model Product {
 }
 
 model RawMaterial {
-  id           String     @id @default(uuid())
-  materialCode String     @unique
+  id           String                  @id @default(uuid())
+  materialCode String                  @unique
   materialName String
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
   purchases    Purchase[]
+  inventory    RawMaterialInventory[]
 
   @@map("raw_materials")
   @@index([materialCode])
   @@index([materialName])
+}
+
+// ============================================
+// INVENTORY MANAGEMENT
+// ============================================
+
+model ProductInventory {
+  id                  String                 @id @default(uuid())
+  productId           String                 @unique
+  product             Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity            Decimal                @default(0) @db.Decimal(10, 2)
+  minimumStock        Decimal                @default(0) @db.Decimal(10, 2)
+  maximumStock        Decimal?               @db.Decimal(10, 2)
+  reorderPoint        Decimal                @default(0) @db.Decimal(10, 2)
+  unit                String                 @default("pcs") // 'pcs', 'kg', 'liters', etc.
+  lastRestockedAt     DateTime?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  transactions        InventoryTransaction[]
+
+  @@map("product_inventory")
+  @@index([productId])
+  @@index([quantity])
+}
+
+model RawMaterialInventory {
+  id                  String                 @id @default(uuid())
+  rawMaterialId       String                 @unique
+  rawMaterial         RawMaterial            @relation(fields: [rawMaterialId], references: [id], onDelete: Cascade)
+  quantity            Decimal                @default(0) @db.Decimal(10, 2)
+  minimumStock        Decimal                @default(0) @db.Decimal(10, 2)
+  maximumStock        Decimal?               @db.Decimal(10, 2)
+  reorderPoint        Decimal                @default(0) @db.Decimal(10, 2)
+  unit                String                 @default("kg") // 'kg', 'liters', 'bags', etc.
+  lastRestockedAt     DateTime?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  transactions        InventoryTransaction[]
+
+  @@map("raw_material_inventory")
+  @@index([rawMaterialId])
+  @@index([quantity])
+}
+
+model InventoryTransaction {
+  id                    String                  @id @default(uuid())
+  type                  String                  // 'product' or 'raw_material'
+  productInventoryId    String?
+  productInventory      ProductInventory?       @relation(fields: [productInventoryId], references: [id], onDelete: Cascade)
+  rawMaterialInventoryId String?
+  rawMaterialInventory  RawMaterialInventory?   @relation(fields: [rawMaterialInventoryId], references: [id], onDelete: Cascade)
+  transactionType       String                  // 'sale', 'purchase', 'adjustment', 'return', 'transfer'
+  quantityChange        Decimal                 @db.Decimal(10, 2) // Positive for IN, negative for OUT
+  quantityBefore        Decimal                 @db.Decimal(10, 2)
+  quantityAfter         Decimal                 @db.Decimal(10, 2)
+  referenceId           String?                 // ID of sale, purchase, or adjustment
+  referenceType         String?                 // 'sale', 'purchase', 'adjustment'
+  notes                 String?                 @db.Text
+  createdBy             String?
+  createdAt             DateTime                @default(now())
+
+  @@map("inventory_transactions")
+  @@index([type])
+  @@index([productInventoryId])
+  @@index([rawMaterialInventoryId])
+  @@index([transactionType])
+  @@index([referenceId])
+  @@index([createdAt])
 }
 
 // ============================================
