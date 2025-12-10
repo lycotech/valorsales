@@ -328,7 +328,7 @@ export default function PurchaseForm({
                         required: 'Amount paid is required',
                         min: { value: 0, message: 'Amount paid cannot be negative' },
                         validate: value =>
-                          value <= totalAmount || 'Amount paid cannot exceed total amount'
+                          value <= totalAmount + 0.01 || 'Amount paid cannot exceed total amount'
                       }}
                       render={({ field }) => (
                         <TextField

@@ -199,24 +199,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (paidNum > totalNum) {
+    // Allow small rounding tolerance (1 cent)
+    if (paidNum > totalNum + 0.01) {
       return NextResponse.json(
         { success: false, error: 'Amount paid cannot exceed total amount' },
         { status: 400 }
       )
     }
 
+    // Cap amount paid to total if within tolerance
+    const finalPaidNum = Math.min(paidNum, totalNum)
+
     // Calculate balance
-    const balanceNum = totalNum - paidNum
+    const balanceNum = totalNum - finalPaidNum
 
     // Determine status
     let status = 'pending'
 
-    if (paidNum === 0) {
+    if (finalPaidNum === 0) {
       status = 'pending'
-    } else if (paidNum > 0 && paidNum < totalNum) {
+    } else if (finalPaidNum > 0 && finalPaidNum < totalNum) {
       status = 'partial'
-    } else if (paidNum === totalNum) {
+    } else if (finalPaidNum >= totalNum) {
       status = 'paid'
     }
 
@@ -252,7 +256,7 @@ export async function POST(request: NextRequest) {
           rawMaterialId,
           quantity: qtyNum,
           totalAmount: totalNum,
-          amountPaid: paidNum,
+          amountPaid: finalPaidNum,
           balance: balanceNum,
           purchaseDate: new Date(purchaseDate),
           status
@@ -264,11 +268,11 @@ export async function POST(request: NextRequest) {
       })
 
       // If initial payment was made, record it
-      if (paidNum > 0 && paymentMode) {
+      if (finalPaidNum > 0 && paymentMode) {
         await tx.purchasePayment.create({
           data: {
             purchaseId: newPurchase.id,
-            amount: paidNum,
+            amount: finalPaidNum,
             paymentDate: new Date(purchaseDate),
             paymentMode,
             notes: notes || 'Initial payment'

@@ -42,13 +42,18 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 
-import type { Sale, SalePayment } from '@/types/salesTypes'
+import type { Sale, SalePayment, SaleItem } from '@/types/salesTypes'
 import type { Customer } from '@/types/customerTypes'
 import type { Product } from '@/types/productTypes'
 
+interface SaleItemWithProduct extends SaleItem {
+  product: Pick<Product, 'id' | 'productCode' | 'productName'>
+}
+
 interface SaleWithDetails extends Sale {
   customer: Pick<Customer, 'id' | 'customerCode' | 'businessName' | 'phone' | 'location'>
-  product: Pick<Product, 'id' | 'productCode' | 'productName' | 'price'>
+  product: Pick<Product, 'id' | 'productCode' | 'productName' | 'price'> | null
+  items: SaleItemWithProduct[]
   payments: SalePayment[]
 }
 
@@ -246,14 +251,17 @@ export default function SaleDetailPage() {
                     </Typography>
                   </Grid>
 
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant='caption' color='text.secondary'>
-                      Product
-                    </Typography>
-                    <Typography variant='body1' fontWeight={500}>
-                      {sale.product.productCode} - {sale.product.productName}
-                    </Typography>
-                  </Grid>
+                  {/* Only show legacy single product if no items */}
+                  {(!sale.items || sale.items.length === 0) && sale.product && (
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant='caption' color='text.secondary'>
+                        Product
+                      </Typography>
+                      <Typography variant='body1' fontWeight={500}>
+                        {sale.product.productCode} - {sale.product.productName}
+                      </Typography>
+                    </Grid>
+                  )}
 
                   <Grid item xs={12} sm={6}>
                     <Typography variant='caption' color='text.secondary'>
@@ -277,26 +285,84 @@ export default function SaleDetailPage() {
                     </Typography>
                   </Grid>
 
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant='caption' color='text.secondary'>
-                      Quantity
-                    </Typography>
-                    <Typography variant='body1'>{Number(sale.quantity).toFixed(2)}</Typography>
-                  </Grid>
+                  {/* Show legacy single product info if no items */}
+                  {(!sale.items || sale.items.length === 0) && sale.product && (
+                    <>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant='caption' color='text.secondary'>
+                          Quantity
+                        </Typography>
+                        <Typography variant='body1'>{Number(sale.quantity).toFixed(2)}</Typography>
+                      </Grid>
 
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant='caption' color='text.secondary'>
-                      Unit Price
-                    </Typography>
-                    <Typography variant='body1'>
-                      ₦
-                      {Number(sale.price).toLocaleString('en-NG', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                      })}
-                    </Typography>
-                  </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant='caption' color='text.secondary'>
+                          Unit Price
+                        </Typography>
+                        <Typography variant='body1'>
+                          ₦
+                          {Number(sale.price).toLocaleString('en-NG', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}
+                        </Typography>
+                      </Grid>
+                    </>
+                  )}
                 </Grid>
+
+                {/* Products List for Multi-Product Sales */}
+                {sale.items && sale.items.length > 0 && (
+                  <Box mt={3}>
+                    <Typography variant='subtitle2' color='text.secondary' gutterBottom>
+                      Products ({sale.items.length} item{sale.items.length > 1 ? 's' : ''})
+                    </Typography>
+                    <TableContainer component={Paper} variant='outlined'>
+                      <Table size='small'>
+                        <TableHead>
+                          <TableRow sx={{ backgroundColor: 'action.hover' }}>
+                            <TableCell>#</TableCell>
+                            <TableCell>Product</TableCell>
+                            <TableCell align='right'>Qty</TableCell>
+                            <TableCell align='right'>Unit Price</TableCell>
+                            <TableCell align='right'>Subtotal</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {sale.items.map((item, index) => (
+                            <TableRow key={item.id}>
+                              <TableCell>{index + 1}</TableCell>
+                              <TableCell>
+                                <Typography variant='body2' fontWeight={500}>
+                                  {item.product.productCode} - {item.product.productName}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align='right'>{Number(item.quantity).toFixed(2)}</TableCell>
+                              <TableCell align='right'>
+                                ₦{Number(item.price).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                              </TableCell>
+                              <TableCell align='right'>
+                                <Typography fontWeight={500}>
+                                  ₦{Number(item.total).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                                </Typography>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          <TableRow sx={{ backgroundColor: 'action.selected' }}>
+                            <TableCell colSpan={4} align='right'>
+                              <Typography fontWeight={600}>Total:</Typography>
+                            </TableCell>
+                            <TableCell align='right'>
+                              <Typography fontWeight={600}>
+                                ₦{Number(sale.total).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </Box>
+                )}
               </CardContent>
             </Card>
           </Grid>

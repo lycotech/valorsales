@@ -55,6 +55,17 @@ export async function GET(
             price: true
           }
         },
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                productCode: true,
+                productName: true
+              }
+            }
+          }
+        },
         payments: {
           orderBy: {
             paymentDate: 'desc'
@@ -80,6 +91,12 @@ export async function GET(
           ...sale.product,
           price: sale.product.price ? parseFloat(sale.product.price.toString()) : null
         } : null,
+        items: sale.items?.map((item: any) => ({
+          ...item,
+          quantity: parseFloat(item.quantity.toString()),
+          price: parseFloat(item.price.toString()),
+          total: parseFloat(item.total.toString())
+        })) || [],
         payments: sale.payments.map((payment: any) => ({
           ...payment,
           amount: parseFloat(payment.amount.toString())
