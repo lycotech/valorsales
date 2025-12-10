@@ -19,6 +19,13 @@ export interface Product extends BaseEntity {
 export interface CreateProductInput {
   productName: string
   price?: number | null
+
+  // Inventory settings
+  initialStock?: number
+  minimumStock?: number
+  maximumStock?: number | null
+  reorderPoint?: number
+  unit?: string
 }
 
 export interface UpdateProductInput {
@@ -55,7 +62,34 @@ export const createProductSchema = z.object({
     .max(999999999.99, 'Price too large')
     .optional()
     .nullable()
-    .transform(val => val === undefined ? null : val)
+    .transform(val => val === undefined ? null : val),
+
+  // Inventory settings
+  initialStock: z
+    .number()
+    .min(0, 'Initial stock cannot be negative')
+    .optional()
+    .default(0),
+  minimumStock: z
+    .number()
+    .min(0, 'Minimum stock cannot be negative')
+    .optional()
+    .default(10),
+  maximumStock: z
+    .number()
+    .positive('Maximum stock must be positive')
+    .optional()
+    .nullable(),
+  reorderPoint: z
+    .number()
+    .min(0, 'Reorder point cannot be negative')
+    .optional()
+    .default(20),
+  unit: z
+    .string()
+    .max(20, 'Unit too long')
+    .optional()
+    .default('pcs')
 })
 
 export const updateProductSchema = z.object({

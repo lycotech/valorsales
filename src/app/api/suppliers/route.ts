@@ -55,11 +55,11 @@ export async function GET(request: NextRequest) {
     const where = search
       ? {
           OR: [
-            { name: { contains: search, mode: 'insensitive' as const } },
-            { supplierCode: { contains: search, mode: 'insensitive' as const } },
-            { address: { contains: search, mode: 'insensitive' as const } },
-            { phone: { contains: search, mode: 'insensitive' as const } },
-            { location: { contains: search, mode: 'insensitive' as const } }
+            { name: { contains: search } },
+            { supplierCode: { contains: search } },
+            { address: { contains: search } },
+            { phone: { contains: search } },
+            { location: { contains: search } }
           ]
         }
       : {}

@@ -74,7 +74,7 @@ export function useAllowedActions(resource: Resource): Action[] {
     return []
   }
 
-  const { getAllowedActions } = require('./permissions')
+  const { getAllowedActions } = require('@/lib/auth/permissions')
 
   return getAllowedActions(user.role, resource)
 }

@@ -43,15 +43,15 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       where.OR = [
-        { customerCode: { contains: search, mode: 'insensitive' } },
-        { businessName: { contains: search, mode: 'insensitive' } },
-        { contactPerson: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search, mode: 'insensitive' } }
+        { customerCode: { contains: search } },
+        { businessName: { contains: search } },
+        { contactPerson: { contains: search } },
+        { phone: { contains: search } }
       ]
     }
 
     if (location) {
-      where.location = { contains: location, mode: 'insensitive' }
+      where.location = { contains: location }
     }
 
     // Build orderBy clause
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
         },
         sales: {
           select: {
-            totalAmount: true,
+            total: true,
             balance: true
           }
         }
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate totals for each customer
     const customersData = customers.map((customer: any) => {
-      const totalSales = customer.sales.reduce((sum: number, sale: any) => sum + Number(sale.totalAmount), 0)
+      const totalSales = customer.sales.reduce((sum: number, sale: any) => sum + Number(sale.total), 0)
       const totalOutstanding = customer.sales.reduce((sum: number, sale: any) => sum + Number(sale.balance), 0)
 
       return {

@@ -2,14 +2,14 @@
 
 /**
  * Sale Form Component
- * Create and edit sales transaction form with validation
+ * Create and edit sales transaction form with multi-product support
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import type { z } from 'zod'
+import { z } from 'zod'
 import {
   Card,
   CardContent,
@@ -28,20 +28,52 @@ import {
   RadioGroup,
   FormControlLabel,
   FormLabel,
-  Chip
+  Chip,
+  IconButton,
+  Divider,
+  Paper,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody
 } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 
-import { createSaleSchema, updateSaleSchema } from '@/types/salesTypes'
+import { saleItemInputSchema } from '@/types/salesTypes'
 
-import type { Sale, CreateSaleInput, UpdateSaleInput } from '@/types/salesTypes'
+import type { Sale } from '@/types/salesTypes'
 import type { Customer } from '@/types/customerTypes'
 import type { Product } from '@/types/productTypes'
 
+// Form schema for multi-product sales
+const multiProductFormSchema = z.object({
+  customerId: z.string().uuid('Invalid customer ID'),
+  items: z.array(saleItemInputSchema).min(1, 'At least one product is required'),
+  supplyDate: z.coerce.date(),
+  paymentMode: z.enum(['cash', 'transfer', 'pos', 'credit', 'others']),
+  amountPaid: z.number().min(0, 'Amount paid cannot be negative').max(999999999.99, 'Amount paid too large'),
+  paymentDate: z.coerce.date().optional().nullable()
+}).refine(
+  data => {
+    if (data.amountPaid > 0 && data.paymentMode !== 'credit') {
+      return data.paymentDate !== null && data.paymentDate !== undefined
+    }
+
+    return true
+  },
+  {
+    message: 'Payment date is required when amount is paid',
+    path: ['paymentDate']
+  }
+)
+
+type FormData = z.infer<typeof multiProductFormSchema>
+
 interface SaleFormProps {
-  sale?: Sale & { customer?: Customer; product?: Product }
+  sale?: Sale & { customer?: Customer; product?: Product; items?: any[] }
   onSubmit: (data: any) => Promise<void>
   onCancel: () => void
   isLoading?: boolean
@@ -51,57 +83,116 @@ interface SaleFormProps {
 export default function SaleForm({ sale, onSubmit, onCancel, isLoading, error }: SaleFormProps) {
   const isEditMode = !!sale
 
-  const schema = isEditMode ? updateSaleSchema : createSaleSchema
-
   // States for customer and product options
   const [customers, setCustomers] = useState<Customer[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [loadingCustomers, setLoadingCustomers] = useState(false)
   const [loadingProducts, setLoadingProducts] = useState(false)
+  const [customerOutstanding, setCustomerOutstanding] = useState<number>(0)
+  const [customerCreditBalance, setCustomerCreditBalance] = useState<number>(0)
+  const [useCreditBalance, setUseCreditBalance] = useState(false)
 
-  // State for calculated values
-  const [calculatedTotal, setCalculatedTotal] = useState(0)
-  const [calculatedBalance, setCalculatedBalance] = useState(0)
-  const [calculatedStatus, setCalculatedStatus] = useState<'pending' | 'partial' | 'paid'>('pending')
+  // Current line item being added
+  const [currentProduct, setCurrentProduct] = useState<Product | null>(null)
+  const [currentQuantity, setCurrentQuantity] = useState<number>(1)
+  const [currentPrice, setCurrentPrice] = useState<number>(0)
 
   const {
     control,
     handleSubmit,
     formState: { errors },
-    reset,
     watch,
-    setValue
-  } = useForm<any>({
-    resolver: zodResolver(schema) as any,
-    defaultValues: isEditMode
+    getValues
+  } = useForm<FormData>({
+    resolver: zodResolver(multiProductFormSchema) as any,
+    defaultValues: isEditMode && sale?.items && sale.items.length > 0
       ? {
           customerId: sale.customerId,
-          productId: sale.productId,
-          quantity: parseFloat(sale.quantity.toString()),
-          price: parseFloat(sale.price.toString()),
-          amountPaid: parseFloat(sale.amountPaid.toString()),
+          items: sale.items.map((item: any) => ({
+            productId: item.productId,
+            quantity: parseFloat(item.quantity.toString()),
+            price: parseFloat(item.price.toString())
+          })),
+          supplyDate: new Date(sale.supplyDate),
           paymentMode: sale.paymentMode as any,
-          supplyDate: sale.supplyDate,
-          paymentDate: sale.paymentDate || undefined
+          amountPaid: parseFloat(sale.amountPaid.toString()),
+          paymentDate: sale.paymentDate ? new Date(sale.paymentDate) : undefined
         }
-      : {
-          customerId: '',
-          productId: '',
-          quantity: 1,
-          price: 0,
-          amountPaid: 0,
-          paymentMode: 'cash',
-          supplyDate: new Date(),
-          paymentDate: undefined
-        }
+      : isEditMode && sale
+        ? {
+            // Backward compatibility: single product sale
+            customerId: sale.customerId,
+            items: [{
+              productId: sale.productId!,
+              quantity: parseFloat(sale.quantity.toString()),
+              price: parseFloat(sale.price.toString())
+            }],
+            supplyDate: new Date(sale.supplyDate),
+            paymentMode: sale.paymentMode as any,
+            amountPaid: parseFloat(sale.amountPaid.toString()),
+            paymentDate: sale.paymentDate ? new Date(sale.paymentDate) : undefined
+          }
+        : {
+            customerId: '',
+            items: [],
+            supplyDate: new Date(),
+            paymentMode: 'cash',
+            amountPaid: 0,
+            paymentDate: undefined
+          }
   })
 
-  // Watch form values for auto-calculation
-  const watchQuantity = watch('quantity')
-  const watchPrice = watch('price')
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'items'
+  })
+
+  // Watch form values
+  const watchItems = watch('items')
   const watchAmountPaid = watch('amountPaid')
   const watchPaymentMode = watch('paymentMode')
-  const watchProductId = watch('productId')
+  const watchCustomerId = watch('customerId')
+
+  // Calculate totals
+  const calculateTotal = useCallback(() => {
+    const items = getValues('items') || []
+
+    return items.reduce((sum, item) => sum + (item.quantity * item.price), 0)
+  }, [getValues])
+
+  const [calculatedTotal, setCalculatedTotal] = useState(0)
+  const [calculatedBalance, setCalculatedBalance] = useState(0)
+  const [calculatedStatus, setCalculatedStatus] = useState<'pending' | 'partial' | 'paid'>('pending')
+  const [excessPayment, setExcessPayment] = useState(0)
+
+  // Fetch customer outstanding balance and credit balance when customer changes
+  useEffect(() => {
+    const fetchCustomerOutstanding = async () => {
+      if (!watchCustomerId) {
+        setCustomerOutstanding(0)
+        setCustomerCreditBalance(0)
+        setUseCreditBalance(false)
+
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/customers/${watchCustomerId}/outstanding`)
+        const result = await response.json()
+
+        if (result.success) {
+          setCustomerOutstanding(result.data.totalOutstanding || 0)
+          setCustomerCreditBalance(result.data.creditBalance || 0)
+        }
+      } catch (err) {
+        console.error('Failed to fetch customer outstanding:', err)
+        setCustomerOutstanding(0)
+        setCustomerCreditBalance(0)
+      }
+    }
+
+    fetchCustomerOutstanding()
+  }, [watchCustomerId])
 
   // Fetch customers on mount
   useEffect(() => {
@@ -149,55 +240,73 @@ export default function SaleForm({ sale, onSubmit, onCancel, isLoading, error }:
 
   // Auto-fill price when product is selected
   useEffect(() => {
-    if (watchProductId && !isEditMode) {
-      const selectedProduct = products.find(p => p.id === watchProductId)
-
-      if (selectedProduct && selectedProduct.price) {
-        setValue('price', parseFloat(selectedProduct.price.toString()))
-      }
+    if (currentProduct && currentProduct.price) {
+      setCurrentPrice(parseFloat(currentProduct.price.toString()))
     }
-  }, [watchProductId, products, isEditMode, setValue])
+  }, [currentProduct])
 
   // Auto-calculate total, balance, and status
   useEffect(() => {
-    const quantity = Number(watchQuantity) || 0
-    const price = Number(watchPrice) || 0
+    const total = calculateTotal()
     const amountPaid = Number(watchAmountPaid) || 0
 
-    const total = quantity * price
-    const balance = total - amountPaid
+    // If using credit balance, include it in the effective payment
+    const creditUsed = useCreditBalance ? Math.min(customerCreditBalance, total) : 0
+    const totalPayment = amountPaid + creditUsed
+
+    const balance = total - totalPayment
+
+    // Calculate excess payment
+    const excess = totalPayment > total ? totalPayment - total : 0
 
     setCalculatedTotal(total)
     setCalculatedBalance(balance)
+    setExcessPayment(excess)
 
     // Determine status
-    if (amountPaid === 0) {
+    if (totalPayment === 0) {
       setCalculatedStatus('pending')
-    } else if (amountPaid < total) {
+    } else if (totalPayment < total) {
       setCalculatedStatus('partial')
     } else {
       setCalculatedStatus('paid')
     }
-  }, [watchQuantity, watchPrice, watchAmountPaid])
+  }, [watchItems, watchAmountPaid, useCreditBalance, customerCreditBalance, calculateTotal])
 
-  // Reset form when sale changes
-  useEffect(() => {
-    if (sale) {
-      reset({
-        customerId: sale.customerId,
-        productId: sale.productId,
-        quantity: parseFloat(sale.quantity.toString()),
-        price: parseFloat(sale.price.toString()),
-        amountPaid: parseFloat(sale.amountPaid.toString()),
-        paymentMode: sale.paymentMode as any,
-        supplyDate: sale.supplyDate,
-        paymentDate: sale.paymentDate || undefined
-      })
+  // Add item to the items list
+  const handleAddItem = () => {
+    if (!currentProduct || currentQuantity <= 0 || currentPrice <= 0) {
+      return
     }
-  }, [sale, reset])
 
-  const handleFormSubmit = async (data: z.infer<typeof schema>) => {
-    await onSubmit(data as CreateSaleInput | UpdateSaleInput)
+    append({
+      productId: currentProduct.id,
+      quantity: currentQuantity,
+      price: currentPrice
+    })
+
+    // Reset current item fields
+    setCurrentProduct(null)
+    setCurrentQuantity(1)
+    setCurrentPrice(0)
+  }
+
+  // Get product name by ID
+  const getProductName = (productId: string) => {
+    const product = products.find(p => p.id === productId)
+
+    return product ? `${product.productCode} - ${product.productName}` : productId
+  }
+
+  const handleFormSubmit = async (data: FormData) => {
+    // Include credit balance usage in the submission
+    const submitData = {
+      ...data,
+      useCreditBalance: useCreditBalance && customerCreditBalance > 0,
+      creditBalanceToUse: useCreditBalance ? Math.min(customerCreditBalance, calculatedTotal) : 0
+    }
+
+    await onSubmit(submitData as any)
   }
 
   const getStatusColor = (status: 'pending' | 'partial' | 'paid') => {
@@ -233,9 +342,7 @@ export default function SaleForm({ sale, onSubmit, onCancel, isLoading, error }:
                         if (typeof option === 'string') {
                           const customer = customers.find(c => c.id === option)
 
-                          return customer
-                            ? `${customer.customerCode} - ${customer.businessName}`
-                            : option
+                          return customer ? `${customer.customerCode} - ${customer.businessName}` : option
                         }
 
                         return `${option.customerCode} - ${option.businessName}`
@@ -277,122 +384,6 @@ export default function SaleForm({ sale, onSubmit, onCancel, isLoading, error }:
                 />
               </Grid>
 
-              {/* Product Selection */}
-              <Grid item xs={12} md={6}>
-                <Controller
-                  name='productId'
-                  control={control}
-                  render={({ field }) => (
-                    <Autocomplete
-                      {...field}
-                      options={products}
-                      getOptionLabel={option => {
-                        if (typeof option === 'string') {
-                          const product = products.find(p => p.id === option)
-
-                          return product ? `${product.productCode} - ${product.productName}` : option
-                        }
-
-                        return `${option.productCode} - ${option.productName}`
-                      }}
-                      loading={loadingProducts}
-                      onChange={(_, data) => field.onChange(data?.id || '')}
-                      value={products.find(p => p.id === field.value) || null}
-                      renderInput={params => (
-                        <TextField
-                          {...params}
-                          label='Product *'
-                          error={!!errors.productId}
-                          helperText={errors.productId?.message?.toString()}
-                          InputProps={{
-                            ...params.InputProps,
-                            endAdornment: (
-                              <>
-                                {loadingProducts ? <CircularProgress size={20} /> : null}
-                                {params.InputProps.endAdornment}
-                              </>
-                            )
-                          }}
-                        />
-                      )}
-                      renderOption={(props, option) => (
-                        <Box component="li" {...props} key={option.id}>
-                          <Box>
-                            <Typography variant='body2' fontWeight={500}>
-                              {option.productCode} - {option.productName}
-                            </Typography>
-                            {option.price && (
-                              <Typography variant='caption' color='text.secondary'>
-                                Price: ₦{parseFloat(option.price.toString()).toLocaleString()}
-                              </Typography>
-                            )}
-                          </Box>
-                        </Box>
-                      )}
-                    />
-                  )}
-                />
-              </Grid>
-
-              {/* Quantity */}
-              <Grid item xs={12} md={4}>
-                <Controller
-                  name='quantity'
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label='Quantity *'
-                      type='number'
-                      inputProps={{ min: 1, step: 0.01 }}
-                      error={!!errors.quantity}
-                      helperText={errors.quantity?.message?.toString()}
-                    />
-                  )}
-                />
-              </Grid>
-
-              {/* Price */}
-              <Grid item xs={12} md={4}>
-                <Controller
-                  name='price'
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      label='Unit Price (₦) *'
-                      type='number'
-                      inputProps={{ min: 0, step: 0.01 }}
-                      error={!!errors.price}
-                      helperText={errors.price?.message?.toString()}
-                    />
-                  )}
-                />
-              </Grid>
-
-              {/* Total (Read-only, calculated) */}
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label='Total (₦)'
-                  value={calculatedTotal.toLocaleString('en-NG', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                  })}
-                  InputProps={{
-                    readOnly: true
-                  }}
-                  sx={{
-                    '& .MuiInputBase-input': {
-                      fontWeight: 600,
-                      color: 'primary.main'
-                    }
-                  }}
-                />
-              </Grid>
-
               {/* Supply Date */}
               <Grid item xs={12} md={6}>
                 <Controller
@@ -413,6 +404,231 @@ export default function SaleForm({ sale, onSubmit, onCancel, isLoading, error }:
                     />
                   )}
                 />
+              </Grid>
+
+              {/* Customer Credit Balance Alert */}
+              {customerCreditBalance > 0 && (
+                <Grid item xs={12}>
+                  <Alert severity='success' icon={<i className='ri-coins-line' />}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                      <Box>
+                        <Typography variant='body2' fontWeight={600}>
+                          Customer has a credit balance of ₦{customerCreditBalance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </Typography>
+                        <Typography variant='caption'>
+                          This credit can be applied to this sale to reduce the amount due.
+                        </Typography>
+                      </Box>
+                      <FormControlLabel
+                        control={
+                          <Radio
+                            checked={useCreditBalance}
+                            onChange={(e) => setUseCreditBalance(e.target.checked)}
+                            size='small'
+                          />
+                        }
+                        label='Use Credit'
+                        sx={{ ml: 2 }}
+                      />
+                    </Box>
+                  </Alert>
+                </Grid>
+              )}
+
+              {/* Customer Outstanding Balance Alert */}
+              {customerOutstanding > 0 && (
+                <Grid item xs={12}>
+                  <Alert severity='info' icon={<i className='ri-wallet-3-line' />}>
+                    <Typography variant='body2' fontWeight={600}>
+                      Customer has an outstanding balance of ₦{customerOutstanding.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </Typography>
+                    <Typography variant='caption'>
+                      You can accept payment that exceeds this sale total to clear part or all of the outstanding balance.
+                    </Typography>
+                  </Alert>
+                </Grid>
+              )}
+
+              <Grid item xs={12}>
+                <Divider sx={{ my: 1 }}>
+                  <Chip label='Products' size='small' />
+                </Divider>
+              </Grid>
+
+              {/* Add Product Section */}
+              <Grid item xs={12}>
+                <Paper variant='outlined' sx={{ p: 3 }}>
+                  <Typography variant='subtitle2' gutterBottom sx={{ mb: 2 }}>
+                    Add Products to Sale
+                  </Typography>
+                  <Grid container spacing={2} alignItems='flex-end'>
+                    {/* Product Selection */}
+                    <Grid item xs={12} md={4}>
+                      <Autocomplete
+                        options={products}
+                        getOptionLabel={option => `${option.productCode} - ${option.productName}`}
+                        loading={loadingProducts}
+                        onChange={(_, data) => setCurrentProduct(data)}
+                        value={currentProduct}
+                        renderInput={params => (
+                          <TextField
+                            {...params}
+                            label='Select Product'
+                            size='small'
+                            InputProps={{
+                              ...params.InputProps,
+                              endAdornment: (
+                                <>
+                                  {loadingProducts ? <CircularProgress size={20} /> : null}
+                                  {params.InputProps.endAdornment}
+                                </>
+                              )
+                            }}
+                          />
+                        )}
+                        renderOption={(props, option) => (
+                          <Box component="li" {...props} key={option.id}>
+                            <Box>
+                              <Typography variant='body2' fontWeight={500}>
+                                {option.productCode} - {option.productName}
+                              </Typography>
+                              {option.price && (
+                                <Typography variant='caption' color='text.secondary'>
+                                  Price: ₦{parseFloat(option.price.toString()).toLocaleString()}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Box>
+                        )}
+                      />
+                    </Grid>
+
+                    {/* Quantity */}
+                    <Grid item xs={6} md={2}>
+                      <TextField
+                        fullWidth
+                        label='Quantity'
+                        type='number'
+                        size='small'
+                        value={currentQuantity}
+                        onChange={e => setCurrentQuantity(e.target.value ? parseFloat(e.target.value) : 0)}
+                        inputProps={{ min: 0.01, step: 0.01 }}
+                      />
+                    </Grid>
+
+                    {/* Price */}
+                    <Grid item xs={6} md={2}>
+                      <TextField
+                        fullWidth
+                        label='Unit Price (₦)'
+                        type='number'
+                        size='small'
+                        value={currentPrice}
+                        onChange={e => setCurrentPrice(e.target.value ? parseFloat(e.target.value) : 0)}
+                        inputProps={{ min: 0.01, step: 0.01 }}
+                      />
+                    </Grid>
+
+                    {/* Subtotal Display */}
+                    <Grid item xs={6} md={2}>
+                      <TextField
+                        fullWidth
+                        label='Subtotal (₦)'
+                        size='small'
+                        value={(currentQuantity * currentPrice).toLocaleString('en-NG', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })}
+                        InputProps={{ readOnly: true }}
+                      />
+                    </Grid>
+
+                    {/* Add Button */}
+                    <Grid item xs={6} md={2}>
+                      <Button
+                        variant='contained'
+                        fullWidth
+                        onClick={handleAddItem}
+                        disabled={!currentProduct || currentQuantity <= 0 || currentPrice <= 0}
+                        startIcon={<i className='ri-add-line' />}
+                      >
+                        Add
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+
+              {/* Items Table */}
+              {fields.length > 0 && (
+                <Grid item xs={12}>
+                  <Paper variant='outlined'>
+                    <Table size='small'>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Product</TableCell>
+                          <TableCell align='right'>Quantity</TableCell>
+                          <TableCell align='right'>Unit Price (₦)</TableCell>
+                          <TableCell align='right'>Subtotal (₦)</TableCell>
+                          <TableCell align='center' width={60}>Action</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {fields.map((field, index) => {
+                          const item = watchItems[index]
+                          const subtotal = item ? item.quantity * item.price : 0
+
+                          return (
+                            <TableRow key={field.id}>
+                              <TableCell>{getProductName(item?.productId || '')}</TableCell>
+                              <TableCell align='right'>{item?.quantity?.toLocaleString() || 0}</TableCell>
+                              <TableCell align='right'>₦{item?.price?.toLocaleString('en-NG', { minimumFractionDigits: 2 }) || '0.00'}</TableCell>
+                              <TableCell align='right'>₦{subtotal.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</TableCell>
+                              <TableCell align='center'>
+                                <IconButton
+                                  size='small'
+                                  color='error'
+                                  onClick={() => remove(index)}
+                                >
+                                  <i className='ri-delete-bin-line' />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                        {/* Total Row */}
+                        <TableRow sx={{ backgroundColor: 'action.hover' }}>
+                          <TableCell colSpan={3}>
+                            <Typography variant='subtitle2' fontWeight={600}>Total</Typography>
+                          </TableCell>
+                          <TableCell align='right'>
+                            <Typography variant='subtitle2' fontWeight={600} color='primary'>
+                              ₦{calculatedTotal.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </Typography>
+                          </TableCell>
+                          <TableCell />
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </Paper>
+                </Grid>
+              )}
+
+              {/* Items validation error */}
+              {errors.items && (
+                <Grid item xs={12}>
+                  <Alert severity='error'>
+                    {typeof errors.items.message === 'string'
+                      ? errors.items.message
+                      : 'At least one product is required'}
+                  </Alert>
+                </Grid>
+              )}
+
+              <Grid item xs={12}>
+                <Divider sx={{ my: 1 }}>
+                  <Chip label='Payment' size='small' />
+                </Divider>
               </Grid>
 
               {/* Payment Mode */}
@@ -452,6 +668,7 @@ export default function SaleForm({ sale, onSubmit, onCancel, isLoading, error }:
                       inputProps={{ min: 0, step: 0.01 }}
                       error={!!errors.amountPaid}
                       helperText={errors.amountPaid?.message?.toString()}
+                      onChange={e => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
                     />
                   )}
                 />
@@ -510,6 +727,23 @@ export default function SaleForm({ sale, onSubmit, onCancel, isLoading, error }:
                 />
               </Grid>
 
+              {/* Credit Balance Usage Info */}
+              {useCreditBalance && customerCreditBalance > 0 && (
+                <Grid item xs={12}>
+                  <Alert severity='info' icon={<i className='ri-bank-card-line' />}>
+                    <Typography variant='body2' fontWeight={600}>
+                      Using ₦{Math.min(customerCreditBalance, calculatedTotal).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} from credit balance
+                    </Typography>
+                    <Typography variant='caption'>
+                      {customerCreditBalance >= calculatedTotal
+                        ? `Remaining credit after this sale: ₦${(customerCreditBalance - calculatedTotal).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                        : `Full credit balance will be applied. Remaining to pay: ₦${(calculatedTotal - customerCreditBalance).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                      }
+                    </Typography>
+                  </Alert>
+                </Grid>
+              )}
+
               {/* Credit Sale Warning */}
               {calculatedBalance > 0 && (
                 <Grid item xs={12}>
@@ -528,6 +762,38 @@ export default function SaleForm({ sale, onSubmit, onCancel, isLoading, error }:
                 </Grid>
               )}
 
+              {/* Excess Payment Info - Will be applied to outstanding balance */}
+              {excessPayment > 0 && customerOutstanding > 0 && (
+                <Grid item xs={12}>
+                  <Alert severity='success' icon={<i className='ri-money-dollar-circle-line' />}>
+                    <Typography variant='body2' fontWeight={600}>
+                      Excess Payment: ₦{excessPayment.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </Typography>
+                    <Typography variant='caption'>
+                      This amount will be applied to the customer&apos;s outstanding balance of ₦{customerOutstanding.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.
+                      {excessPayment >= customerOutstanding
+                        ? ' Outstanding balance will be fully cleared.'
+                        : ` Remaining outstanding after this payment: ₦${(customerOutstanding - excessPayment).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                      }
+                    </Typography>
+                  </Alert>
+                </Grid>
+              )}
+
+              {/* Excess Payment Warning - No outstanding to apply */}
+              {excessPayment > 0 && customerOutstanding === 0 && (
+                <Grid item xs={12}>
+                  <Alert severity='warning'>
+                    <Typography variant='body2' fontWeight={500}>
+                      Warning: Payment exceeds sale total by ₦{excessPayment.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </Typography>
+                    <Typography variant='caption'>
+                      This customer has no outstanding balance. The excess payment will create a credit on their account.
+                    </Typography>
+                  </Alert>
+                </Grid>
+              )}
+
               {/* Error Alert */}
               {error && (
                 <Grid item xs={12}>
@@ -541,7 +807,7 @@ export default function SaleForm({ sale, onSubmit, onCancel, isLoading, error }:
                   <Button variant='outlined' color='secondary' onClick={onCancel} disabled={isLoading}>
                     Cancel
                   </Button>
-                  <Button type='submit' variant='contained' disabled={isLoading}>
+                  <Button type='submit' variant='contained' disabled={isLoading || fields.length === 0}>
                     {isLoading ? (
                       <>
                         <CircularProgress size={20} sx={{ mr: 1 }} />

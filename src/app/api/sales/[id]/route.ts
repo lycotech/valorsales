@@ -71,15 +71,15 @@ export async function GET(
       success: true,
       data: {
         ...sale,
-        quantity: parseFloat(sale.quantity.toString()),
-        price: parseFloat(sale.price.toString()),
+        quantity: sale.quantity ? parseFloat(sale.quantity.toString()) : null,
+        price: sale.price ? parseFloat(sale.price.toString()) : null,
         total: parseFloat(sale.total.toString()),
         amountPaid: parseFloat(sale.amountPaid.toString()),
         balance: parseFloat(sale.balance.toString()),
-        product: {
+        product: sale.product ? {
           ...sale.product,
           price: sale.product.price ? parseFloat(sale.product.price.toString()) : null
-        },
+        } : null,
         payments: sale.payments.map((payment: any) => ({
           ...payment,
           amount: parseFloat(payment.amount.toString())
@@ -204,8 +204,8 @@ export async function PUT(
 
     // Recalculate total, balance, and status if needed
     if (needsRecalculation) {
-      const quantity = data.quantity ?? parseFloat(existingSale.quantity.toString())
-      const price = data.price ?? parseFloat(existingSale.price.toString())
+      const quantity = data.quantity ?? (existingSale.quantity ? parseFloat(existingSale.quantity.toString()) : 0)
+      const price = data.price ?? (existingSale.price ? parseFloat(existingSale.price.toString()) : 0)
       const amountPaid = data.amountPaid ?? parseFloat(existingSale.amountPaid.toString())
 
       const total = quantity * price
@@ -250,8 +250,8 @@ export async function PUT(
       success: true,
       data: {
         ...sale,
-        quantity: parseFloat(sale.quantity.toString()),
-        price: parseFloat(sale.price.toString()),
+        quantity: sale.quantity ? parseFloat(sale.quantity.toString()) : null,
+        price: sale.price ? parseFloat(sale.price.toString()) : null,
         total: parseFloat(sale.total.toString()),
         amountPaid: parseFloat(sale.amountPaid.toString()),
         balance: parseFloat(sale.balance.toString())

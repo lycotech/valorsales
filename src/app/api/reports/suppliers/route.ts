@@ -43,14 +43,14 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       where.OR = [
-        { supplierCode: { contains: search, mode: 'insensitive' } },
-        { name: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search, mode: 'insensitive' } }
+        { supplierCode: { contains: search } },
+        { name: { contains: search } },
+        { phone: { contains: search } }
       ]
     }
 
     if (location) {
-      where.location = { contains: location, mode: 'insensitive' }
+      where.location = { contains: location }
     }
 
     // Build orderBy clause

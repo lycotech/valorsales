@@ -17,6 +17,13 @@ export interface RawMaterial extends BaseEntity {
 
 export interface CreateRawMaterialInput {
   materialName: string
+
+  // Inventory settings
+  initialStock?: number
+  minimumStock?: number
+  maximumStock?: number | null
+  reorderPoint?: number
+  unit?: string
 }
 
 export interface UpdateRawMaterialInput {
@@ -45,7 +52,34 @@ export const createRawMaterialSchema = z.object({
     .min(1, 'Material name is required')
     .min(2, 'Material name must be at least 2 characters')
     .max(255, 'Material name too long')
-    .trim()
+    .trim(),
+
+  // Inventory settings
+  initialStock: z
+    .number()
+    .min(0, 'Initial stock cannot be negative')
+    .optional()
+    .default(0),
+  minimumStock: z
+    .number()
+    .min(0, 'Minimum stock cannot be negative')
+    .optional()
+    .default(50),
+  maximumStock: z
+    .number()
+    .positive('Maximum stock must be positive')
+    .optional()
+    .nullable(),
+  reorderPoint: z
+    .number()
+    .min(0, 'Reorder point cannot be negative')
+    .optional()
+    .default(100),
+  unit: z
+    .string()
+    .max(20, 'Unit too long')
+    .optional()
+    .default('kg')
 })
 
 export const updateRawMaterialSchema = z.object({

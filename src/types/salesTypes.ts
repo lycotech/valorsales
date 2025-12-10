@@ -12,9 +12,22 @@ import type { Product } from './productTypes'
 // INTERFACES
 // ============================================
 
-export interface Sale extends BaseEntity {
-  customerId: string
+export interface SaleItem extends BaseEntity {
+  saleId: string
   productId: string
+  quantity: number
+  price: number
+  subtotal: number
+}
+
+export interface SaleItemWithProduct extends SaleItem {
+  product: Product
+}
+
+export interface Sale extends BaseEntity {
+  saleCode: string
+  customerId: string
+  productId?: string | null  // Made optional for multi-product support
   quantity: number
   price: number
   total: number
@@ -36,11 +49,30 @@ export interface SalePayment extends BaseEntity {
 
 export interface SaleWithRelations extends Sale {
   customer: Customer
-  product: Product
+  product?: Product | null
   payments: SalePayment[]
+  items: SaleItemWithProduct[]  // Added for multi-product support
+}
+
+// Input for each line item when creating multi-product sale
+export interface SaleItemInput {
+  productId: string
+  quantity: number
+  price: number
 }
 
 export interface CreateSaleInput {
+  customerId: string
+  items: SaleItemInput[]  // Multiple products
+  supplyDate: Date | string
+  paymentMode: PaymentMode
+  amountPaid: number
+  paymentDate?: Date | string | null
+  useCreditBalance?: boolean  // Whether to use customer's credit balance
+}
+
+// Legacy single-product sale input (for backward compatibility)
+export interface CreateSingleSaleInput {
   customerId: string
   productId: string
   quantity: number
@@ -100,37 +132,33 @@ export const paymentModeSchema = z.enum(['cash', 'transfer', 'pos', 'credit', 'o
 
 export const transactionStatusSchema = z.enum(['pending', 'partial', 'paid'])
 
+// Schema for individual sale item
+export const saleItemInputSchema = z.object({
+  productId: z.string().uuid('Invalid product ID'),
+  quantity: z
+    .number()
+    .positive('Quantity must be positive')
+    .max(999999.99, 'Quantity too large'),
+  price: z
+    .number()
+    .positive('Price must be positive')
+    .max(999999999.99, 'Price too large')
+})
+
+// Schema for multi-product sale
 export const createSaleSchema = z
   .object({
     customerId: z.string().uuid('Invalid customer ID'),
-    productId: z.string().uuid('Invalid product ID'),
-    quantity: z
-      .number()
-      .positive('Quantity must be positive')
-      .max(999999.99, 'Quantity too large'),
-    price: z
-      .number()
-      .positive('Price must be positive')
-      .max(999999999.99, 'Price too large'),
+    items: z.array(saleItemInputSchema).min(1, 'At least one product is required'),
     supplyDate: z.coerce.date(),
     paymentMode: paymentModeSchema,
     amountPaid: z
       .number()
       .min(0, 'Amount paid cannot be negative')
       .max(999999999.99, 'Amount paid too large'),
-    paymentDate: z.coerce.date().optional().nullable()
+    paymentDate: z.coerce.date().optional().nullable(),
+    useCreditBalance: z.boolean().optional().default(false)
   })
-  .refine(
-    data => {
-      const total = data.quantity * data.price
-
-      return data.amountPaid <= total
-    },
-    {
-      message: 'Amount paid cannot exceed total amount',
-      path: ['amountPaid']
-    }
-  )
   .refine(
     data => {
       // If payment mode is credit and amount paid is less than total, payment date is optional

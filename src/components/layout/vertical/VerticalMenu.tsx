@@ -11,7 +11,7 @@ import PerfectScrollbar from 'react-perfect-scrollbar'
 
 // Type Imports
 import type { VerticalMenuContextProps } from '@menu/components/vertical-menu/Menu'
-import { UserRole } from '@/types/commonTypes'
+import type { UserRole } from '@/types/commonTypes'
 
 // Component Imports
 import { Menu } from '@menu/vertical-menu'
@@ -71,11 +71,18 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
       menuItemsCount: menuData.length
     })
 
-    // While loading or no user, show full menu (will be filtered once user loads)
-    if (loading || !user) {
-      console.log('⚠️ Loading or no user, showing full menu', { loading, hasUser: !!user })
+    // While loading, show empty menu to prevent flash
+    if (loading) {
+      console.log('⏳ Loading session, showing empty menu')
 
-      return menuData
+      return []
+    }
+
+    // If no user after loading, return empty menu
+    if (!user) {
+      console.log('❌ No user, showing empty menu')
+
+      return []
     }
 
     // Filter based on user role (cast string to UserRole enum)

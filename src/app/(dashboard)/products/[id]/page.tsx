@@ -5,13 +5,15 @@ import { Card, CardContent, Typography, Button, Box, Chip, Grid } from '@mui/mat
 
 import { prisma } from '@/lib/db/client'
 
-export default async function ProductDetailPage({ params }: { params: { id: string } }) {
+export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+
   const [product, salesCount] = await Promise.all([
     prisma.product.findUnique({
-      where: { id: params.id }
+      where: { id }
     }),
     prisma.sale.count({
-      where: { productId: params.id }
+      where: { productId: id }
     })
   ])
 

@@ -1,9 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 
-import { verifyToken } from '@/lib/auth/jwt'
 import { prisma } from '@/lib/db/client'
+import { verifyToken } from '@/lib/auth/jwt'
 import { updateRawMaterialSchema } from '@/types/rawMaterialTypes'
-import { Resource, Action } from '@/types/commonTypes'
+
+// Helper function to verify auth from request
+async function verifyAuth(request: NextRequest) {
+  const token = request.cookies.get('auth_token')?.value
+
+  if (!token) return null
+
+  return verifyToken(token)
+}
 
 /**
  * Get single raw material by ID
@@ -100,7 +109,7 @@ export async function PUT(
         {
           success: false,
           error: 'Validation error',
-          details: validationResult.error.errors
+          details: validationResult.error.issues
         },
         { status: 400 }
       )
@@ -121,10 +130,7 @@ export async function PUT(
     if (data.materialName && data.materialName !== existingMaterial.materialName) {
       const duplicateMaterial = await prisma.rawMaterial.findFirst({
         where: {
-          materialName: {
-            equals: data.materialName,
-            mode: 'insensitive'
-          },
+          materialName: data.materialName,
           id: { not: id }
         }
       })

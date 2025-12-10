@@ -3,9 +3,6 @@
 // React Imports
 import { useState } from 'react'
 
-// Next Imports
-import { useRouter } from 'next/navigation'
-
 // MUI Imports
 import Typography from '@mui/material/Typography'
 import TextField from '@mui/material/TextField'
@@ -26,9 +23,6 @@ import type { Mode } from '@core/types'
 // Component Imports
 import Link from '@components/Link'
 import Logo from '@components/layout/shared/Logo'
-
-// Config Imports
-import themeConfig from '@configs/themeConfig'
 
 // Hook Imports
 import { useImageVariant } from '@core/hooks/useImageVariant'
@@ -51,7 +45,6 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
   const borderedLightIllustration = '/images/illustrations/auth/v2-login-light-border.png'
 
   // Hooks
-  const router = useRouter()
   const { settings } = useSettings()
   const authBackground = useImageVariant(mode, lightImg, darkImg)
 
@@ -83,6 +76,7 @@ const LoginV2 = ({ mode }: { mode: Mode }) => {
         console.error('Login error:', data)
         setError(data.message || data.error || 'Invalid email or password')
         setLoading(false)
+
         return
       }
 

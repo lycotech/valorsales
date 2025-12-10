@@ -5,13 +5,15 @@ import { Card, CardContent, Typography, Button, Box, Chip, Grid } from '@mui/mat
 
 import { prisma } from '@/lib/db/client'
 
-export default async function RawMaterialDetailPage({ params }: { params: { id: string } }) {
+export default async function RawMaterialDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+
   const [rawMaterial, purchaseCount] = await Promise.all([
     prisma.rawMaterial.findUnique({
-      where: { id: params.id }
+      where: { id }
     }),
     prisma.purchase.count({
-      where: { rawMaterialId: params.id }
+      where: { rawMaterialId: id }
     })
   ])
 

@@ -60,10 +60,12 @@ interface CustomerOutstanding {
   customerName: string
   phone: string
   location: string
+  creditBalance: number
   totalSales: number
   totalAmount: number
   totalPaid: number
   totalOutstanding: number
+  netBalance: number
   salesCount: number
   sales: Sale[]
 }
@@ -201,6 +203,40 @@ export default function CustomerOutstandingPage() {
       type: 'number',
       renderCell: params => (
         <Typography variant='body2' color='error.main' fontWeight={600}>
+          ₦
+          {Number(params.value).toLocaleString('en-NG', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })}
+        </Typography>
+      )
+    },
+    {
+      field: 'creditBalance',
+      headerName: 'Credit Balance',
+      width: 140,
+      type: 'number',
+      renderCell: params => (
+        <Typography variant='body2' color='success.main' fontWeight={600}>
+          ₦
+          {Number(params.value).toLocaleString('en-NG', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })}
+        </Typography>
+      )
+    },
+    {
+      field: 'netBalance',
+      headerName: 'Net Balance',
+      width: 140,
+      type: 'number',
+      renderCell: params => (
+        <Typography
+          variant='body2'
+          color={Number(params.value) > 0 ? 'error.main' : 'success.main'}
+          fontWeight={600}
+        >
           ₦
           {Number(params.value).toLocaleString('en-NG', {
             minimumFractionDigits: 2,

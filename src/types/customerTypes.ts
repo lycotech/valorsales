@@ -16,6 +16,7 @@ export interface Customer extends BaseEntity {
   address: string
   phone: string
   location: string
+  creditBalance?: number
 }
 
 export interface CreateCustomerInput {
@@ -35,12 +36,14 @@ export interface UpdateCustomerInput {
 export interface CustomerWithStats extends Customer {
   totalSales: number
   totalOutstanding: number
+  creditBalance: number
   lastSaleDate: Date | null
 }
 
 export interface CustomerListItem extends Customer {
   salesCount: number
   outstandingBalance: number
+  creditBalance: number
 }
 
 // ============================================

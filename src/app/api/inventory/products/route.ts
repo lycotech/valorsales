@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.product = {
         OR: [
-          { productName: { contains: search, mode: 'insensitive' } },
-          { productCode: { contains: search, mode: 'insensitive' } }
+          { productName: { contains: search } },
+          { productCode: { contains: search } }
         ]
       }
     }

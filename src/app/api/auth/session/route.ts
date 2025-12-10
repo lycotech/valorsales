@@ -32,6 +32,7 @@ export async function GET() {
     )
   } catch (error) {
     console.error('Session error:', error)
+
     return NextResponse.json(
       {
         success: false,

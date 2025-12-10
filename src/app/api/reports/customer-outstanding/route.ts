@@ -82,7 +82,8 @@ export async function GET(request: NextRequest) {
             customerCode: true,
             businessName: true,
             phone: true,
-            location: true
+            location: true,
+            creditBalance: true
           }
         }
       },
@@ -100,10 +101,12 @@ export async function GET(request: NextRequest) {
         customerName: string
         phone: string
         location: string
+        creditBalance: number
         totalSales: number
         totalAmount: number
         totalPaid: number
         totalOutstanding: number
+        netBalance: number
         salesCount: number
         sales: any[]
       }
@@ -116,16 +119,20 @@ export async function GET(request: NextRequest) {
       const balance = parseFloat(sale.balance.toString())
 
       if (!customerMap.has(customerId)) {
+        const creditBal = parseFloat(sale.customer.creditBalance?.toString() || '0')
+
         customerMap.set(customerId, {
           customerId: sale.customer.id,
           customerCode: sale.customer.customerCode,
           customerName: sale.customer.businessName,
           phone: sale.customer.phone,
           location: sale.customer.location,
+          creditBalance: creditBal,
           totalSales: 0,
           totalAmount: 0,
           totalPaid: 0,
           totalOutstanding: 0,
+          netBalance: 0,
           salesCount: 0,
           sales: []
         })
@@ -137,6 +144,7 @@ export async function GET(request: NextRequest) {
       customerData.totalAmount += total
       customerData.totalPaid += paid
       customerData.totalOutstanding += balance
+      customerData.netBalance = customerData.totalOutstanding - customerData.creditBalance
       customerData.sales.push({
         id: sale.id,
         supplyDate: sale.supplyDate,

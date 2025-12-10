@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.rawMaterial = {
         OR: [
-          { materialName: { contains: search, mode: 'insensitive' } },
-          { materialCode: { contains: search, mode: 'insensitive' } }
+          { materialName: { contains: search } },
+          { materialCode: { contains: search } }
         ]
       }
     }

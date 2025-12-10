@@ -29,21 +29,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Forbidden: Insufficient permissions' }, { status: 403 })
     }
 
-    // Get low stock products (quantity <= reorderPoint OR quantity = 0)
-    const lowStockProducts = await prisma.productInventory.findMany({
-      where: {
-        OR: [
-          { quantity: { equals: 0 } },
-          {
-            AND: [
-              { quantity: { gt: 0 } },
-
-              // Use raw SQL for comparing quantity with reorderPoint
-              prisma.productInventory.fields.quantity <= prisma.productInventory.fields.reorderPoint
-            ]
-          }
-        ]
-      },
+    // Get all products inventory and filter for low stock (quantity <= reorderPoint OR quantity = 0)
+    const allProductInventory = await prisma.productInventory.findMany({
       include: {
         product: {
           select: {
@@ -56,19 +43,16 @@ export async function GET(request: NextRequest) {
       orderBy: { quantity: 'asc' }
     })
 
-    // Get low stock raw materials
-    const lowStockMaterials = await prisma.rawMaterialInventory.findMany({
-      where: {
-        OR: [
-          { quantity: { equals: 0 } },
-          {
-            AND: [
-              { quantity: { gt: 0 } },
-              prisma.rawMaterialInventory.fields.quantity <= prisma.rawMaterialInventory.fields.reorderPoint
-            ]
-          }
-        ]
-      },
+    // Filter low stock products in JS (where quantity <= reorderPoint)
+    const lowStockProducts = allProductInventory.filter(item => {
+      const qty = Number(item.quantity)
+      const reorderPt = Number(item.reorderPoint)
+
+      return qty === 0 || qty <= reorderPt
+    })
+
+    // Get all raw materials inventory and filter for low stock
+    const allMaterialInventory = await prisma.rawMaterialInventory.findMany({
       include: {
         rawMaterial: {
           select: {
@@ -79,6 +63,14 @@ export async function GET(request: NextRequest) {
         }
       },
       orderBy: { quantity: 'asc' }
+    })
+
+    // Filter low stock materials in JS
+    const lowStockMaterials = allMaterialInventory.filter(item => {
+      const qty = Number(item.quantity)
+      const reorderPt = Number(item.reorderPoint)
+
+      return qty === 0 || qty <= reorderPt
     })
 
     // Transform products
@@ -115,7 +107,7 @@ export async function GET(request: NextRequest) {
               : `LOW STOCK: ${item.product.productName} - ${qty} ${item.unit} remaining (reorder at ${reorderPt})`
         }
       })
-      .filter(Boolean)
+      .filter((item): item is NonNullable<typeof item> => item !== null)
 
     // Transform materials
     const materialAlerts = lowStockMaterials
@@ -151,7 +143,7 @@ export async function GET(request: NextRequest) {
               : `LOW STOCK: ${item.rawMaterial.materialName} - ${qty} ${item.unit} remaining (reorder at ${reorderPt})`
         }
       })
-      .filter(Boolean)
+      .filter((item): item is NonNullable<typeof item> => item !== null)
 
     const alerts = [...productAlerts, ...materialAlerts]
 

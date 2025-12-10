@@ -131,8 +131,8 @@ export async function POST(
           },
           sale: {
             ...updatedSale,
-            quantity: parseFloat(updatedSale.quantity.toString()),
-            price: parseFloat(updatedSale.price.toString()),
+            quantity: updatedSale.quantity ? parseFloat(updatedSale.quantity.toString()) : null,
+            price: updatedSale.price ? parseFloat(updatedSale.price.toString()) : null,
             total: parseFloat(updatedSale.total.toString()),
             amountPaid: parseFloat(updatedSale.amountPaid.toString()),
             balance: parseFloat(updatedSale.balance.toString())

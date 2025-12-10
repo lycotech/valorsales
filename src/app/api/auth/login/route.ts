@@ -2,10 +2,13 @@ import type { NextRequest} from 'next/server';
 import { NextResponse } from 'next/server'
 
 import { loginSchema } from '@/types'
+import type { UserWithoutPassword } from '@/types'
 import { prisma } from '@/lib/db/client'
 import { verifyPassword } from '@/lib/auth/password'
 import { generateToken } from '@/lib/auth/jwt'
-import { setAuthCookie } from '@/lib/auth/session'
+
+// setAuthCookie is available for future use but currently we set cookies manually
+// import { setAuthCookie } from '@/lib/auth/session'
 
 /**
  * User Login
@@ -75,11 +78,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Generate JWT token
-    const userWithoutPassword = {
+    const userWithoutPassword: UserWithoutPassword = {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role,
+      role: user.role as UserWithoutPassword['role'],
       isActive: user.isActive,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt

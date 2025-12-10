@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+
 import { verifyToken } from '@/lib/auth/jwt'
-import prisma from '@/lib/db/client'
+import { prisma } from '@/lib/db/client'
 import { createProductSchema } from '@/types/productTypes'
-import { Resource, Action } from '@/types/commonTypes'
 
 /**
  * Get all products with search and pagination
@@ -11,7 +12,13 @@ import { Resource, Action } from '@/types/commonTypes'
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication
-    const payload = await verifyToken(request)
+    const token = request.cookies.get('auth_token')?.value
+
+    if (!token) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const payload = verifyToken(token)
 
     if (!payload) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
@@ -30,12 +37,12 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = parseInt(searchParams.get('pageSize') || '10')
 
-    // Build where clause for search
+    // Build where clause for search (MySQL is case-insensitive by default)
     const where = search
       ? {
           OR: [
-            { productName: { contains: search, mode: 'insensitive' as const } },
-            { productCode: { contains: search, mode: 'insensitive' as const } }
+            { productName: { contains: search } },
+            { productCode: { contains: search } }
           ]
         }
       : {}
@@ -96,16 +103,32 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
-    const payload = await verifyToken(request)
+    const token = request.cookies.get('auth_token')?.value
+
+    console.log('🔐 POST /api/products - Token check:', { hasToken: !!token, tokenLength: token?.length })
+
+    if (!token) {
+      console.log('❌ POST /api/products - No token found in cookies')
+
+      return NextResponse.json({ success: false, error: 'Unauthorized - No token' }, { status: 401 })
+    }
+
+    const payload = verifyToken(token)
+
+    console.log('🔐 POST /api/products - Payload:', payload)
 
     if (!payload) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      console.log('❌ POST /api/products - Token verification failed')
+
+      return NextResponse.json({ success: false, error: 'Unauthorized - Invalid token' }, { status: 401 })
     }
 
     // Check permissions - Admin and Procurement can create products
     const allowedRoles = ['admin', 'procurement']
 
-    if (!allowedRoles.includes(payload.role as any)) {
+    console.log('🔐 POST /api/products - Role check:', { userRole: payload.role, allowedRoles })
+
+    if (!allowedRoles.includes(payload.role.toLowerCase())) {
       return NextResponse.json({ success: false, error: 'Forbidden: Insufficient permissions' }, { status: 403 })
     }
 
@@ -119,7 +142,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: 'Validation error',
-          details: validationResult.error.errors
+          details: validationResult.error.issues
         },
         { status: 400 }
       )
@@ -127,13 +150,10 @@ export async function POST(request: NextRequest) {
 
     const data = validationResult.data
 
-    // Check for duplicate product name
+    // Check for duplicate product name (MySQL is case-insensitive by default)
     const existingProduct = await prisma.product.findFirst({
       where: {
-        productName: {
-          equals: data.productName,
-          mode: 'insensitive'
-        }
+        productName: data.productName
       }
     })
 
@@ -166,21 +186,62 @@ export async function POST(request: NextRequest) {
 
     const productCode = `PROD-${nextNumber.toString().padStart(4, '0')}`
 
-    // Create product
-    const product = await prisma.product.create({
-      data: {
-        productCode,
-        productName: data.productName,
-        price: data.price
+    // Create product with inventory in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Create product
+      const product = await tx.product.create({
+        data: {
+          productCode,
+          productName: data.productName,
+          price: data.price
+        }
+      })
+
+      // Create inventory record
+      const inventory = await tx.productInventory.create({
+        data: {
+          productId: product.id,
+          quantity: data.initialStock || 0,
+          minimumStock: data.minimumStock || 10,
+          maximumStock: data.maximumStock || null,
+          reorderPoint: data.reorderPoint || 20,
+          unit: data.unit || 'pcs',
+          lastRestockedAt: data.initialStock && data.initialStock > 0 ? new Date() : null
+        }
+      })
+
+      // If there's initial stock, create an inventory transaction
+      if (data.initialStock && data.initialStock > 0) {
+        await tx.inventoryTransaction.create({
+          data: {
+            type: 'product',
+            productInventoryId: inventory.id,
+            transactionType: 'adjustment',
+            quantityChange: data.initialStock,
+            quantityBefore: 0,
+            quantityAfter: data.initialStock,
+            notes: 'Initial stock on product creation',
+            createdBy: payload.userId
+          }
+        })
       }
+
+      return { product, inventory }
     })
 
     return NextResponse.json(
       {
         success: true,
         data: {
-          ...product,
-          price: product.price ? parseFloat(product.price.toString()) : null
+          ...result.product,
+          price: result.product.price ? parseFloat(result.product.price.toString()) : null,
+          inventory: {
+            quantity: Number(result.inventory.quantity),
+            minimumStock: Number(result.inventory.minimumStock),
+            maximumStock: result.inventory.maximumStock ? Number(result.inventory.maximumStock) : null,
+            reorderPoint: Number(result.inventory.reorderPoint),
+            unit: result.inventory.unit
+          }
         },
         message: 'Product created successfully'
       },

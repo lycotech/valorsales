@@ -25,17 +25,16 @@ export function filterMenuByPermissions(
     return []
   }
 
-  const filtered = menuData
+  // First pass: filter items based on permissions
+  const filteredItems = menuData
     .map(item => {
-      // Handle sections
+      // Handle sections with children (nested structure)
       const section = item as VerticalSectionDataType
 
-      if (section.isSection) {
-        console.log('📂 Processing section:', section.label)
+      if (section.isSection && section.children) {
+        console.log('📂 Processing section with children:', section.label)
 
-        const filteredChildren = section.children
-          ? filterMenuByPermissions(section.children, userRole)
-          : []
+        const filteredChildren = filterMenuByPermissions(section.children, userRole)
 
         console.log('📂 Section children:', { label: section.label, childCount: filteredChildren.length })
 
@@ -50,6 +49,14 @@ export function filterMenuByPermissions(
           ...section,
           children: filteredChildren
         }
+      }
+
+      // Handle section headers (without children - just dividers with labels)
+      if (section.isSection && !section.children) {
+        console.log('📂 Processing section header (divider):', section.label)
+
+        // Keep section headers - we'll remove empty ones in second pass
+        return item
       }
 
       // Handle sub-menus
@@ -124,7 +131,42 @@ export function filterMenuByPermissions(
     })
     .filter((item): item is VerticalMenuDataType => item !== null)
 
-  console.log('✅ filterMenuByPermissions result:', { inputCount: menuData.length, outputCount: filtered.length })
+  // Second pass: remove section headers that have no items after them
+  const result: VerticalMenuDataType[] = []
 
-  return filtered
+  for (let i = 0; i < filteredItems.length; i++) {
+    const item = filteredItems[i]
+    const section = item as VerticalSectionDataType
+
+    if (section.isSection && !section.children) {
+      // Check if there are any non-section items after this section header
+      // until the next section header or end of array
+      let hasItemsAfter = false
+
+      for (let j = i + 1; j < filteredItems.length; j++) {
+        const nextItem = filteredItems[j] as VerticalSectionDataType
+
+        if (nextItem.isSection && !nextItem.children) {
+          // Hit another section header, stop looking
+          break
+        }
+
+        // Found a non-section item
+        hasItemsAfter = true
+        break
+      }
+
+      if (hasItemsAfter) {
+        result.push(item)
+      } else {
+        console.log('🚫 Removing empty section header:', section.label)
+      }
+    } else {
+      result.push(item)
+    }
+  }
+
+  console.log('✅ filterMenuByPermissions result:', { inputCount: menuData.length, outputCount: result.length })
+
+  return result
 }

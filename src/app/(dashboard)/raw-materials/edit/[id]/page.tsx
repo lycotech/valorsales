@@ -3,9 +3,11 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/db/client'
 import RawMaterialForm from '@/components/raw-materials/RawMaterialForm'
 
-export default async function EditRawMaterialPage({ params }: { params: { id: string } }) {
+export default async function EditRawMaterialPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+
   const rawMaterial = await prisma.rawMaterial.findUnique({
-    where: { id: params.id }
+    where: { id }
   })
 
   if (!rawMaterial) {

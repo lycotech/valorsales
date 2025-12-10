@@ -45,15 +45,15 @@ export async function GET(request: NextRequest) {
     const pageSize = parseInt(searchParams.get('pageSize') || '10')
     const skip = (page - 1) * pageSize
 
-    // 4. Build where clause for search
+    // 4. Build where clause for search (MySQL is case-insensitive by default)
     const where = search
       ? {
           OR: [
-            { businessName: { contains: search, mode: 'insensitive' as const } },
-            { customerCode: { contains: search, mode: 'insensitive' as const } },
-            { address: { contains: search, mode: 'insensitive' as const } },
-            { phone: { contains: search, mode: 'insensitive' as const } },
-            { location: { contains: search, mode: 'insensitive' as const } }
+            { businessName: { contains: search } },
+            { customerCode: { contains: search } },
+            { address: { contains: search } },
+            { phone: { contains: search } },
+            { location: { contains: search } }
           ]
         }
       : {}
@@ -69,10 +69,13 @@ export async function GET(request: NextRequest) {
       prisma.customer.count({ where })
     ])
 
-    // 6. Return response
+    // 6. Return response with creditBalance formatted
     return NextResponse.json({
       success: true,
-      data: customers,
+      data: customers.map(c => ({
+        ...c,
+        creditBalance: parseFloat(c.creditBalance.toString())
+      })),
       pagination: {
         page,
         pageSize,

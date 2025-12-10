@@ -75,6 +75,14 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
           resource: Resource.SALES,
           action: Action.READ
         }
+      },
+      {
+        label: 'Customer Credits',
+        href: '/sales/customer-credits',
+        permission: {
+          resource: Resource.SALES,
+          action: Action.READ
+        }
       }
     ]
   },
@@ -100,6 +108,14 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
         permission: {
           resource: Resource.INVENTORY,
           action: Action.READ
+        }
+      },
+      {
+        label: 'Goods Received',
+        href: '/inventory/goods-received',
+        permission: {
+          resource: Resource.INVENTORY,
+          action: Action.UPDATE
         }
       },
       {

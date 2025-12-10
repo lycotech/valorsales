@@ -469,9 +469,23 @@ This workflow document provides a complete, step-by-step development plan for bu
   - List all alerts with color-coded status
   - Link to detail pages
   - Auto-refresh data
-- [ ] Create `/src/app/(dashboard)/inventory/products/page.tsx` (Future)
-- [ ] Create `/src/app/(dashboard)/inventory/raw-materials/page.tsx` (Future)
-- [ ] Create `/src/app/(dashboard)/inventory/adjustments/page.tsx` (Future)
+- [x] Create `/src/app/(dashboard)/inventory/products/page.tsx`:
+  - Product inventory list with search and filtering
+  - Stock level progress bars
+  - Status chips (In Stock, Low Stock, Out of Stock, Overstock)
+  - Pagination and last restocked date
+- [x] Create `/src/app/(dashboard)/inventory/raw-materials/page.tsx`:
+  - Raw material inventory list with search and filtering
+  - Same features as products page
+- [x] Create `/src/app/(dashboard)/inventory/adjustments/page.tsx`:
+  - Manual stock adjustment dialog
+  - Add/Remove stock with reason tracking
+  - Transaction history table
+  - Preview adjustment before submitting
+- [x] Create `/src/app/api/inventory/transactions/route.ts`:
+  - GET endpoint for transaction history
+  - Filter by transaction type
+  - Pagination support
 
 ### **Task 8.8: Initialization & Testing** ✅
 

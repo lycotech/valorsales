@@ -1,8 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+
+import { prisma } from '@/lib/db/client'
 import { verifyToken } from '@/lib/auth/jwt'
-import prisma from '@/lib/db/client'
 import { updateProductSchema } from '@/types/productTypes'
-import { Resource, Action } from '@/types/commonTypes'
+
+// Helper function to verify auth from request
+async function verifyAuth(request: NextRequest) {
+  const token = request.cookies.get('auth_token')?.value
+
+  if (!token) return null
+
+  return verifyToken(token)
+}
 
 /**
  * Get single product by ID
@@ -100,7 +110,7 @@ export async function PUT(
         {
           success: false,
           error: 'Validation error',
-          details: validationResult.error.errors
+          details: validationResult.error.issues
         },
         { status: 400 }
       )
@@ -121,10 +131,7 @@ export async function PUT(
     if (data.productName && data.productName !== existingProduct.productName) {
       const duplicateProduct = await prisma.product.findFirst({
         where: {
-          productName: {
-            equals: data.productName,
-            mode: 'insensitive'
-          },
+          productName: data.productName,
           id: { not: id }
         }
       })

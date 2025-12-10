@@ -15,7 +15,8 @@ import {
   Box,
   Typography,
   Alert,
-  Grid
+  Grid,
+  Divider
 } from '@mui/material'
 
 import { createRawMaterialSchema, updateRawMaterialSchema } from '@/types/rawMaterialTypes'
@@ -42,7 +43,11 @@ export default function RawMaterialForm({ mode, rawMaterial }: RawMaterialFormPr
   } = useForm<CreateRawMaterialInput>({
     resolver: zodResolver(mode === 'create' ? createRawMaterialSchema : updateRawMaterialSchema) as any,
     defaultValues: {
-      materialName: rawMaterial?.materialName || ''
+      materialName: rawMaterial?.materialName || '',
+      initialStock: 0,
+      minimumStock: 50,
+      maximumStock: 5000,
+      reorderPoint: 100
     }
   })
 
@@ -113,6 +118,94 @@ export default function RawMaterialForm({ mode, rawMaterial }: RawMaterialFormPr
                 )}
               />
             </Grid>
+
+            {mode === 'create' && (
+              <>
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 2 }}>
+                    <Typography variant='body2' color='text.secondary'>
+                      Inventory Settings
+                    </Typography>
+                  </Divider>
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={3}>
+                  <Controller
+                    name='initialStock'
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label='Initial Stock'
+                        type='number'
+                        inputProps={{ min: 0 }}
+                        onChange={e => field.onChange(Number(e.target.value))}
+                        error={!!errors.initialStock}
+                        helperText={errors.initialStock?.message || 'Starting inventory quantity (kg)'}
+                      />
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={3}>
+                  <Controller
+                    name='minimumStock'
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label='Minimum Stock'
+                        type='number'
+                        inputProps={{ min: 0 }}
+                        onChange={e => field.onChange(Number(e.target.value))}
+                        error={!!errors.minimumStock}
+                        helperText={errors.minimumStock?.message || 'Alert when stock falls below'}
+                      />
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={3}>
+                  <Controller
+                    name='maximumStock'
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label='Maximum Stock'
+                        type='number'
+                        inputProps={{ min: 0 }}
+                        onChange={e => field.onChange(Number(e.target.value))}
+                        error={!!errors.maximumStock}
+                        helperText={errors.maximumStock?.message || 'Maximum storage capacity'}
+                      />
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={3}>
+                  <Controller
+                    name='reorderPoint'
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label='Reorder Point'
+                        type='number'
+                        inputProps={{ min: 0 }}
+                        onChange={e => field.onChange(Number(e.target.value))}
+                        error={!!errors.reorderPoint}
+                        helperText={errors.reorderPoint?.message || 'When to reorder stock'}
+                      />
+                    )}
+                  />
+                </Grid>
+              </>
+            )}
           </Grid>
 
           <Box sx={{ display: 'flex', gap: 2, mt: 6 }}>
