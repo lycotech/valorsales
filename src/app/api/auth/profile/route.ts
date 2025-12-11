@@ -3,7 +3,8 @@
  * Endpoint for getting and updating current user's profile
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 
 import prisma from '@/lib/db/client'
@@ -18,10 +19,7 @@ export async function GET() {
     const currentUser = await getCurrentUser()
 
     if (!currentUser) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
     }
 
     const user = await prisma.user.findUnique({
@@ -38,10 +36,7 @@ export async function GET() {
     })
 
     if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 })
     }
 
     return NextResponse.json({
@@ -51,10 +46,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching profile:', error)
 
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch profile' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Failed to fetch profile' }, { status: 500 })
   }
 }
 
@@ -67,10 +59,7 @@ export async function PUT(request: NextRequest) {
     const currentUser = await getCurrentUser()
 
     if (!currentUser) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
     }
 
     const body = await request.json()
@@ -78,10 +67,7 @@ export async function PUT(request: NextRequest) {
 
     // Validate required fields
     if (!name || name.trim().length < 2) {
-      return NextResponse.json(
-        { success: false, error: 'Name must be at least 2 characters' },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, error: 'Name must be at least 2 characters' }, { status: 400 })
     }
 
     // Build update data
@@ -96,10 +82,7 @@ export async function PUT(request: NextRequest) {
       })
 
       if (existingUser) {
-        return NextResponse.json(
-          { success: false, error: 'Email already in use' },
-          { status: 400 }
-        )
+        return NextResponse.json({ success: false, error: 'Email already in use' }, { status: 400 })
       }
 
       updateData.email = email
@@ -120,20 +103,14 @@ export async function PUT(request: NextRequest) {
       })
 
       if (!userWithPassword) {
-        return NextResponse.json(
-          { success: false, error: 'User not found' },
-          { status: 404 }
-        )
+        return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 })
       }
 
       // Verify current password
       const isValidPassword = await bcrypt.compare(currentPassword, userWithPassword.password)
 
       if (!isValidPassword) {
-        return NextResponse.json(
-          { success: false, error: 'Current password is incorrect' },
-          { status: 400 }
-        )
+        return NextResponse.json({ success: false, error: 'Current password is incorrect' }, { status: 400 })
       }
 
       // Validate new password
@@ -171,9 +148,6 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating profile:', error)
 
-    return NextResponse.json(
-      { success: false, error: 'Failed to update profile' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Failed to update profile' }, { status: 500 })
   }
 }

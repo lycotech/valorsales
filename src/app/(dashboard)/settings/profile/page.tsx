@@ -319,13 +319,7 @@ export default function ProfilePage() {
                 </Grid>
 
                 <Box mt={4} display='flex' justifyContent='flex-end'>
-                  <Button
-                    type='submit'
-                    variant='contained'
-                    size='large'
-                    startIcon={<SaveIcon />}
-                    disabled={saving}
-                  >
+                  <Button type='submit' variant='contained' size='large' startIcon={<SaveIcon />} disabled={saving}>
                     {saving ? 'Saving...' : 'Save Changes'}
                   </Button>
                 </Box>
