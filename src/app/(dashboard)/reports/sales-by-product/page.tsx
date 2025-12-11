@@ -1,18 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
-import {
-  Card,
-  CardContent,
-  Typography,
-  Grid,
-  TextField,
-  MenuItem,
-  Box,
-  Button,
-  IconButton
-} from '@mui/material'
+import { Card, CardContent, Typography, Grid, TextField, MenuItem, Box, Button, IconButton } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridPaginationModel, GridColDef } from '@mui/x-data-grid'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -21,6 +11,9 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import PrintIcon from '@mui/icons-material/Print'
 import DownloadIcon from '@mui/icons-material/Download'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
+
+import { exportToExcel, exportReportToPDF, printPage } from '@/utils/exportHelpers'
 
 interface ProductSalesData {
   productId: string
@@ -42,6 +35,7 @@ interface ReportSummary {
 }
 
 export default function SalesByProductPage() {
+  const isMounted = useRef(false)
   const [products, setProducts] = useState<ProductSalesData[]>([])
 
   const [summary, setSummary] = useState<ReportSummary>({
@@ -78,6 +72,8 @@ export default function SalesByProductPage() {
       const response = await fetch(`/api/reports/sales-by-product?${params}`)
       const result = await response.json()
 
+      if (!isMounted.current) return
+
       if (result.success) {
         setProducts(result.data)
         setSummary(result.summary)
@@ -87,21 +83,75 @@ export default function SalesByProductPage() {
     } catch (error) {
       console.error('Error fetching report:', error)
     } finally {
-      setLoading(false)
+      if (isMounted.current) {
+        setLoading(false)
+      }
     }
   }, [startDate, endDate, sortBy, sortOrder])
 
   useEffect(() => {
+    isMounted.current = true
     fetchReport()
+
+    return () => {
+      isMounted.current = false
+    }
   }, [fetchReport])
 
-  const handleExport = (format: 'csv' | 'excel') => {
-    // TODO: Implement export functionality
-    console.log(`Exporting as ${format}`)
+  const handleExportExcel = () => {
+    exportToExcel(products, {
+      filename: `sales-by-product-${new Date().toISOString().split('T')[0]}`,
+      sheetName: 'Sales by Product',
+      title: 'Sales by Product Report',
+      subtitle: `Period: ${startDate?.toLocaleDateString() || 'All Time'} - ${endDate?.toLocaleDateString() || 'Present'}`,
+      columns: [
+        { key: 'productCode', label: 'Product Code', width: 15 },
+        { key: 'productName', label: 'Product Name', width: 30 },
+        { key: 'salesCount', label: 'Transactions', width: 15 },
+        { key: 'totalQuantitySold', label: 'Qty Sold', width: 15 },
+        { key: 'totalRevenue', label: 'Revenue (₦)', width: 18 },
+        { key: 'totalOutstanding', label: 'Outstanding (₦)', width: 18 }
+      ]
+    })
+  }
+
+  const handleExportPDF = () => {
+    exportReportToPDF({
+      filename: `sales-by-product-${new Date().toISOString().split('T')[0]}`,
+      title: 'Sales by Product Report',
+      subtitle: `Period: ${startDate?.toLocaleDateString() || 'All Time'} - ${endDate?.toLocaleDateString() || 'Present'}`,
+      orientation: 'landscape',
+      sections: [
+        {
+          title: 'Summary',
+          type: 'summary',
+          summaryItems: [
+            { label: 'Total Products', value: summary.totalProducts },
+            { label: 'Total Transactions', value: summary.totalTransactions },
+            { label: 'Total Quantity Sold', value: summary.totalQuantitySold.toLocaleString() },
+            { label: 'Total Revenue', value: `₦${summary.totalRevenue.toLocaleString()}` },
+            { label: 'Total Outstanding', value: `₦${summary.totalOutstanding.toLocaleString()}` }
+          ]
+        },
+        {
+          title: 'Product Sales Details',
+          type: 'table',
+          data: products,
+          columns: [
+            { key: 'productCode', label: 'Code' },
+            { key: 'productName', label: 'Product' },
+            { key: 'salesCount', label: 'Trans.' },
+            { key: 'totalQuantitySold', label: 'Qty Sold' },
+            { key: 'totalRevenue', label: 'Revenue (₦)', format: v => `₦${Number(v).toLocaleString()}` },
+            { key: 'totalOutstanding', label: 'Outstanding (₦)', format: v => `₦${Number(v).toLocaleString()}` }
+          ]
+        }
+      ]
+    })
   }
 
   const handlePrint = () => {
-    window.print()
+    printPage()
   }
 
   const columns: GridColDef[] = [
@@ -132,7 +182,7 @@ export default function SalesByProductPage() {
       headerName: 'Total Revenue',
       width: 160,
       type: 'number',
-      valueFormatter: (value) => `₦${(value as number)?.toLocaleString() || 0}`,
+      valueFormatter: value => `₦${(value as number)?.toLocaleString() || 0}`,
       cellClassName: () => 'text-success'
     },
     {
@@ -140,8 +190,8 @@ export default function SalesByProductPage() {
       headerName: 'Outstanding',
       width: 150,
       type: 'number',
-      valueFormatter: (value) => `₦${(value as number)?.toLocaleString() || 0}`,
-      cellClassName: (params) => (params.value > 0 ? 'text-error' : 'text-success')
+      valueFormatter: value => `₦${(value as number)?.toLocaleString() || 0}`,
+      cellClassName: params => (params.value > 0 ? 'text-error' : 'text-success')
     },
     {
       field: 'averagePrice',
@@ -149,7 +199,7 @@ export default function SalesByProductPage() {
       width: 130,
       type: 'number',
       valueGetter: (value, row) => (row.totalRevenue / row.totalQuantitySold).toFixed(2),
-      valueFormatter: (value) => `₦${parseFloat(value).toLocaleString()}`
+      valueFormatter: value => `₦${parseFloat(value).toLocaleString()}`
     }
   ]
 
@@ -163,8 +213,11 @@ export default function SalesByProductPage() {
             <IconButton onClick={fetchReport} title='Refresh'>
               <RefreshIcon />
             </IconButton>
-            <Button variant='outlined' startIcon={<DownloadIcon />} onClick={() => handleExport('excel')}>
+            <Button variant='outlined' startIcon={<DownloadIcon />} onClick={handleExportExcel}>
               Export Excel
+            </Button>
+            <Button variant='outlined' startIcon={<PictureAsPdfIcon />} onClick={handleExportPDF}>
+              Export PDF
             </Button>
             <Button variant='outlined' startIcon={<PrintIcon />} onClick={handlePrint}>
               Print
@@ -251,13 +304,7 @@ export default function SalesByProductPage() {
                 />
               </Grid>
               <Grid item xs={12} md={3}>
-                <TextField
-                  fullWidth
-                  select
-                  label='Sort By'
-                  value={sortBy}
-                  onChange={e => setSortBy(e.target.value)}
-                >
+                <TextField fullWidth select label='Sort By' value={sortBy} onChange={e => setSortBy(e.target.value)}>
                   <MenuItem value='revenue'>Revenue</MenuItem>
                   <MenuItem value='quantity'>Quantity Sold</MenuItem>
                   <MenuItem value='sales'>Number of Sales</MenuItem>

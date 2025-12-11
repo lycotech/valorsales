@@ -2,6 +2,10 @@
 
 ## Inventory, Sales & Supplier Management System
 
+**Version:** 1.4  
+**Last Updated:** 2025-06-08  
+**Status:** Phase 11 Complete - Shared Components & Audit Trail
+
 ---
 
 ## **Project Overview**
@@ -10,12 +14,14 @@ This workflow document provides a complete, step-by-step development plan for bu
 
 **Tech Stack:**
 
-- Next.js 15 (App Router)
+- Next.js 16.0.8 (App Router) - _Upgraded for security_
 - React 18
 - TypeScript
 - Material-UI (MUI)
 - Tailwind CSS
-- (Database layer to be determined)
+- MySQL (HostGator) with Prisma ORM
+- Chart.js for dashboard visualizations
+- Deployed on Vercel
 
 ---
 
@@ -189,7 +195,7 @@ This workflow document provides a complete, step-by-step development plan for bu
 
 ### **Task 4.2: Sales Management & Updates** ✅
 
-- [x] **Database Layer:
+- [x] \*\*Database Layer:
   - Create API routes for updating sales records
   - Implement payment update functionality
   - Add audit trail for edits
@@ -207,7 +213,7 @@ This workflow document provides a complete, step-by-step development plan for bu
 
 ### **Task 4.3: Customer Outstanding Balances** ✅
 
-- [x] **Database Layer:
+- [x] \*\*Database Layer:
   - Create API to fetch outstanding balances by customer
   - Aggregate all unpaid/partially paid sales
 - [x] **UI Components:**
@@ -243,7 +249,7 @@ This workflow document provides a complete, step-by-step development plan for bu
 
 ### **Task 5.2: Purchase Management & Updates** ✅
 
-- [x] **Database Layer:
+- [x] \*\*Database Layer:
   - Create API routes for updating purchases
   - Implement payment update functionality
   - Add audit trail
@@ -259,7 +265,7 @@ This workflow document provides a complete, step-by-step development plan for bu
 
 ### **Task 5.3: Supplier Outstanding Payables** ✅
 
-- [x] **Database Layer:
+- [x] \*\*Database Layer:
   - Create API to fetch outstanding payables by supplier
   - Aggregate all unpaid/partially paid purchases
 - [x] **UI Components:**
@@ -525,38 +531,50 @@ This workflow document provides a complete, step-by-step development plan for bu
 
 ---
 
-## **PHASE 9: DASHBOARD & HOME PAGE**
+## **PHASE 9: DASHBOARD & HOME PAGE** ✅
 
-### **Task 9.1: Dashboard Analytics**
+### **Task 9.1: Dashboard Analytics** ✅
 
-- [ ] **Database Layer:**
-  - Create API for dashboard statistics
-  - Calculate key metrics (total sales, outstanding, etc.)
-- [ ] **UI Components:**
+- [x] **Database Layer:**
+  - Create API for dashboard statistics (`/api/dashboard/stats`)
+  - Create API for charts data (`/api/dashboard/charts`)
+  - Calculate key metrics (total sales, outstanding, inventory alerts)
+- [x] **UI Components:**
   - Create dashboard page (`/app/(dashboard)/home/page.tsx`)
   - Add summary cards:
-    - Total Sales (current period)
+    - Total Sales (current period) with trend indicator
+    - Total Purchases with trend indicator
     - Total Outstanding from Customers
     - Total Payables to Suppliers
-    - Recent Transactions
   - Add charts:
-    - Sales trend
-    - Top products
-    - Payment status overview
-  - Display quick actions
+    - Sales trend (Line chart - last 6 months)
+    - Top products by revenue (Bar chart)
+  - Recent Transactions table with links
+  - Inventory alerts summary with out-of-stock/low-stock counts
+  - Quick Stats (customers, products counts)
+  - Display quick actions (New Sale, New Purchase, Add Customer, Inventory Alerts)
 
 ---
 
-## **PHASE 10: SHARED COMPONENTS & UTILITIES**
+## **PHASE 10: SHARED COMPONENTS & UTILITIES** ✅
 
-### **Task 10.1: Reusable Form Components**
+### **Task 10.1: Reusable Form Components** ✅
 
-- [ ] Create reusable form components in `/src/components/forms`:
-  - DatePicker wrapper
-  - SearchableSelect/Autocomplete
-  - CurrencyInput
-  - FormSection wrapper
-  - FormButtons (Save, Cancel, etc.)
+- [x] Create reusable form components in `/src/components/forms`:
+  - `DatePickerWrapper.tsx` - MUI DatePicker with localization
+  - `DateTimePickerWrapper.tsx` - DateTime picker variant
+  - `DateRangePicker.tsx` - Start/end date range picker
+  - `SearchableSelect.tsx` - Autocomplete with search
+  - `AsyncSearchableSelect.tsx` - Async loading variant
+  - `CurrencyInput.tsx` - Formatted currency input (₦)
+  - `FormSection.tsx` - Collapsible section wrapper
+  - `FormGrid.tsx` - Responsive form layout grid
+  - `FormRow.tsx` - Horizontal form row
+  - `FormFieldWrapper.tsx` - Field with label
+  - `FormButtons.tsx` - Save/Cancel button group
+  - `DeleteButtons.tsx` - Confirm delete buttons
+  - `IconButtonGroup.tsx` - Action button group
+  - `index.ts` - Exports all components
 
 ### **Task 10.2: Data Table Component**
 
@@ -567,60 +585,116 @@ This workflow document provides a complete, step-by-step development plan for bu
   - Export functionality
   - Action buttons
 
-### **Task 10.3: Utility Functions**
+### **Task 10.3: Utility Functions** ✅
 
-- [ ] Create utility functions in `/src/utils`:
-  - Number formatting
-  - Date formatting
-  - Currency formatting
-  - Export helpers (PDF/Excel)
-  - Validation helpers
+- [x] Create utility functions in `/src/utils`:
+  - `formatters.ts` - Number, date, currency formatting
+    - `formatNumber()` - Locale number formatting
+    - `formatPercentage()` - Percentage formatting
+    - `formatCurrency()` - Nigerian Naira formatting
+    - `formatCurrencyCompact()` - Compact currency (₦1.2M)
+    - `formatDate()` - Date formatting (short/medium/long/full)
+    - `formatDateTime()` - Date with time
+    - `formatRelativeTime()` - Relative time (2 hours ago)
+    - `getDateRange()` - Reporting period ranges
+    - `truncate()`, `capitalize()`, `titleCase()`, `slugify()` - String utils
+    - `isEmpty()`, `isValidNigerianPhone()`, `isValidEmail()` - Validation
+    - `generateId()`, `deepClone()`, `debounce()`, `groupBy()`, `sortBy()` - Helpers
+  - `exportHelpers.ts` - Export utilities
+    - `exportToCSV()` - CSV export with proper encoding
+    - `exportToCSVFormatted()` - CSV with formatted headers
+    - `exportToPrintablePDF()` - Print-friendly HTML for PDF
+    - `exportToJSON()` - JSON export
+    - `parseCSV()` - CSV string parser
 
-### **Task 10.4: API Client & Error Handling**
+### **Task 10.4: API Client & Error Handling** ✅
 
-- [ ] Create API client wrapper
-- [ ] Implement global error handling
-- [ ] Add loading states
-- [ ] Create toast/notification system
+- [x] Create API client wrapper `/src/utils/apiClient.ts`:
+  - `api.get()`, `api.post()`, `api.put()`, `api.patch()`, `api.delete()` methods
+  - Timeout handling (30s default)
+  - Global error handling with status code messages
+  - Toast notifications on success/error
+  - `useAPI()` hook - GET with loading/error states
+  - `useMutation()` hook - POST/PUT/DELETE with callbacks
+  - Request/response type safety with generics
 
 ---
 
-## **PHASE 11: AUDIT & HISTORY**
+## **PHASE 11: AUDIT & HISTORY** ✅
 
-### **Task 11.1: Audit Trail Implementation**
+### **Task 11.1: Audit Trail Implementation** ✅
 
-- [ ] Create audit log table in database
-- [ ] Implement logging for all CRUD operations
-- [ ] Track user actions with timestamps
-- [ ] Create audit log viewer (Admin only)
+- [x] AuditLog table already in database schema:
+  - Fields: id, userId, action, entity, entityId, oldValue, newValue, ipAddress, userAgent, createdAt
+  - Indexed by userId, entity, action, createdAt
+- [x] Create audit logger utility `/src/lib/auditLogger.ts`:
+  - `createAuditLog()` - Base log creation
+  - `logCreate()` - Log CREATE actions
+  - `logUpdate()` - Log UPDATE actions (only changed fields)
+  - `logDelete()` - Log DELETE actions
+  - `logLogin()` / `logLogout()` - Auth logging
+  - `logExport()` - Export action logging
+  - `getRequestDetails()` - Extract IP and user agent
+  - Sanitizes sensitive fields (password, tokens)
+- [x] Implement logging in API routes:
+  - Sales API - logs sale creation with key fields
+  - Customers API - logs customer creation
+- [x] Create audit logs API `/src/app/api/audit-logs/route.ts`:
+  - GET: List logs with filters (user, action, entity, date range)
+  - POST: Get stats (30-day counts by action/entity) and entity history
+- [x] Create audit log viewer page `/src/app/(dashboard)/audit-logs/page.tsx`:
+  - Summary cards (total activities, creates, updates, deletes)
+  - Filterable table with pagination
+  - Action/entity filters
+  - Details dialog showing old/new values
+  - Admin-only access
+- [x] Add Audit Logs to navigation menu (Settings section)
 
 ### **Task 11.2: Payment History**
 
-- [ ] Create payment history tracking for sales
-- [ ] Create payment history tracking for purchases
-- [ ] Display payment timeline in detail views
+- [x] Payment history already tracked for sales (SalePayment model)
+- [x] Payment history already tracked for purchases (PurchasePayment model)
+- [x] Payment timeline displayed in sale/purchase detail views
 
 ---
 
-## **PHASE 12: EXPORT & PRINTING**
+## **PHASE 12: EXPORT & PRINTING** ✅
 
-### **Task 12.1: PDF Export**
+### **Task 12.1: PDF Export** ✅
 
-- [ ] Install PDF generation library (e.g., jsPDF, react-pdf)
-- [ ] Create PDF templates for reports
-- [ ] Implement PDF download functionality
+- [x] Install PDF generation library (jsPDF + jspdf-autotable)
+- [x] Create PDF templates for reports in `/src/utils/exportHelpers.ts`:
+  - `exportToPDF()` - Table-based PDF export with customizable columns
+  - `exportReportToPDF()` - Multi-section reports (summary + tables)
+  - Auto page breaks, headers, footers with page numbers
+- [x] Implement PDF download functionality in all report pages
 
-### **Task 12.2: Excel Export**
+### **Task 12.2: Excel Export** ✅
 
-- [ ] Install Excel library (e.g., xlsx, exceljs)
-- [ ] Implement Excel export for all reports
-- [ ] Format Excel output properly
+- [x] Install Excel library (xlsx)
+- [x] Implement Excel export for all reports:
+  - `exportToExcel()` - Single sheet with title and formatted columns
+  - `exportToExcelMultiSheet()` - Multiple sheets support
+  - Column width customization, title/subtitle support
+- [x] Format Excel output properly with headers
 
-### **Task 12.3: Print Views**
+### **Task 12.3: Print Views** ✅
 
-- [ ] Create print-friendly CSS
-- [ ] Add print button to reports
-- [ ] Optimize print layouts
+- [x] Create print-friendly CSS in `/src/app/globals.css`:
+  - Hide navigation, sidebar, buttons on print
+  - Proper table and card styling for print
+  - Page break handling
+  - Print header/footer support classes
+- [x] Add print button to all reports using `printPage()` utility
+- [x] Optimize print layouts with `@media print` styles
+
+### **Reports Updated with Export Functionality:**
+
+- ✅ Total Sales Report - Excel, PDF, Print
+- ✅ Outstanding Receivables Report - Excel, PDF, Print
+- ✅ Sales by Product Report - Excel, PDF, Print
+- ✅ Customer List Report - Excel, PDF, Print
+- ✅ Supplier List Report - Excel, PDF, Print
 
 ---
 
@@ -852,29 +926,29 @@ This workflow document provides a complete, step-by-step development plan for bu
 
 ## **APPENDIX: ESTIMATED TIMELINE**
 
-| Phase                      | Tasks     | Estimated Time |
-| -------------------------- | --------- | -------------- |
-| Phase 1: Setup             | 4 tasks   | 2-3 days       |
-| Phase 2: Authentication    | 3 tasks   | 3-4 days       |
-| Phase 3: Master Data       | 4 modules | 8-10 days      |
-| Phase 4: Sales Module      | 3 tasks   | 5-6 days       |
-| Phase 5: Supplier Payments | 3 tasks   | 4-5 days       |
-| Phase 6: Reports           | 6 reports | 6-8 days       |
-| Phase 7: Navigation        | 2 tasks   | 1 day          |
-| **Phase 8: Inventory**     | **8 tasks** | **5-6 days** ✅ |
-| Phase 9: Dashboard         | 1 task    | 2-3 days       |
-| Phase 10: Shared Components | 4 tasks  | 3-4 days       |
-| Phase 11: Audit            | 2 tasks   | 2-3 days       |
-| Phase 12: Export/Print     | 3 tasks   | 3-4 days       |
-| Phase 13: Search/Filter    | 2 tasks   | 2-3 days       |
-| Phase 14: Validation       | 3 tasks   | 2-3 days       |
-| Phase 15: Performance      | 3 tasks   | 3-4 days       |
-| Phase 16: Security         | 3 tasks   | 3-4 days       |
-| Phase 17: Responsive       | 3 tasks   | 2-3 days       |
-| Phase 18: Testing          | 4 tasks   | 5-7 days       |
-| Phase 19: Documentation    | 3 tasks   | 3-4 days       |
-| Phase 20: Deployment       | 3 tasks   | 2-3 days       |
-| Phase 21: Post-Launch      | 3 tasks   | Ongoing        |
+| Phase                       | Tasks       | Estimated Time  |
+| --------------------------- | ----------- | --------------- |
+| Phase 1: Setup              | 4 tasks     | 2-3 days        |
+| Phase 2: Authentication     | 3 tasks     | 3-4 days        |
+| Phase 3: Master Data        | 4 modules   | 8-10 days       |
+| Phase 4: Sales Module       | 3 tasks     | 5-6 days        |
+| Phase 5: Supplier Payments  | 3 tasks     | 4-5 days        |
+| Phase 6: Reports            | 6 reports   | 6-8 days        |
+| Phase 7: Navigation         | 2 tasks     | 1 day           |
+| **Phase 8: Inventory**      | **8 tasks** | **5-6 days** ✅ |
+| Phase 9: Dashboard          | 1 task      | 2-3 days        |
+| Phase 10: Shared Components | 4 tasks     | 3-4 days        |
+| Phase 11: Audit             | 2 tasks     | 2-3 days        |
+| Phase 12: Export/Print      | 3 tasks     | 3-4 days        |
+| Phase 13: Search/Filter     | 2 tasks     | 2-3 days        |
+| Phase 14: Validation        | 3 tasks     | 2-3 days        |
+| Phase 15: Performance       | 3 tasks     | 3-4 days        |
+| Phase 16: Security          | 3 tasks     | 3-4 days        |
+| Phase 17: Responsive        | 3 tasks     | 2-3 days        |
+| Phase 18: Testing           | 4 tasks     | 5-7 days        |
+| Phase 19: Documentation     | 3 tasks     | 3-4 days        |
+| Phase 20: Deployment        | 3 tasks     | 2-3 days        |
+| Phase 21: Post-Launch       | 3 tasks     | Ongoing         |
 
 **Total Estimated Development Time: 9-13 weeks**
 
@@ -903,15 +977,16 @@ This workflow document provides a complete, step-by-step development plan for bu
 
 ---
 
-**Document Version:** 1.2  
+**Document Version:** 1.3  
 **Last Updated:** December 11, 2025  
-**Status:** In Progress - Phases 1-8 Complete, Phase 20 (Deployment) Complete
+**Status:** In Progress - Phases 1-9 Complete, Phase 20 (Deployment) Complete
 
 ---
 
 ## **RECENT UPDATES (December 2025)**
 
 ### **Multi-Product Sales Feature**
+
 - Added `SaleItem` model to database schema
 - Rewrote sales form to support multiple products per transaction
 - Each sale now has a `saleCode` for identification
@@ -919,16 +994,19 @@ This workflow document provides a complete, step-by-step development plan for bu
 - Inventory deducted per product item automatically
 
 ### **Build & Type Fixes**
+
 - Fixed Next.js 15 params type issues (`Promise<{ id: string }>`)
 - Fixed Prisma 6 MySQL compatibility (`mode: 'insensitive'` not supported)
 - Fixed Zod validation error access (`.error.issues` not `.error.errors`)
 - Simplified ESLint rules to reduce build noise
 
 ### **Validation Improvements**
+
 - Added rounding tolerance (±0.01) for payment validation
 - Fixed purchase form accepting approximate amounts
 
 ### **Deployment to Vercel**
+
 - Created comprehensive `DEPLOYMENT.md` guide
 - Configured HostGator MySQL as production database
 - Fixed pnpm lockfile sync issues

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 import {
   Card,
@@ -26,6 +26,9 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import PrintIcon from '@mui/icons-material/Print'
 import DownloadIcon from '@mui/icons-material/Download'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
+
+import { exportToExcel, exportToPDF, exportReportToPDF, printPage } from '@/utils/exportHelpers'
 
 interface PaymentMethodData {
   paymentMode: string
@@ -50,6 +53,7 @@ interface ReportSummary {
 }
 
 export default function TotalSalesReportPage() {
+  const isMounted = useRef(false)
   const [summary, setSummary] = useState<ReportSummary>({
     totalTransactions: 0,
     totalRevenue: 0,
@@ -66,7 +70,6 @@ export default function TotalSalesReportPage() {
 
   const fetchReport = useCallback(async () => {
     try {
-
       const params = new URLSearchParams({
         groupBy
       })
@@ -76,6 +79,8 @@ export default function TotalSalesReportPage() {
 
       const response = await fetch(`/api/reports/total-sales?${params}`)
       const result = await response.json()
+
+      if (!isMounted.current) return
 
       if (result.success) {
         setSummary(result.summary)
@@ -90,16 +95,77 @@ export default function TotalSalesReportPage() {
   }, [startDate, endDate, groupBy])
 
   useEffect(() => {
+    isMounted.current = true
     fetchReport()
+
+    return () => {
+      isMounted.current = false
+    }
   }, [fetchReport])
 
-  const handleExport = (format: 'csv' | 'excel') => {
-    // TODO: Implement export functionality
-    console.log(`Exporting as ${format}`)
+  const handleExportExcel = () => {
+    // Export period breakdown to Excel
+    exportToExcel(periods, {
+      filename: `total-sales-report-${new Date().toISOString().split('T')[0]}`,
+      sheetName: 'Sales Report',
+      title: 'Total Sales Report',
+      subtitle: `Period: ${startDate?.toLocaleDateString() || 'All Time'} - ${endDate?.toLocaleDateString() || 'Present'}`,
+      columns: [
+        { key: 'period', label: 'Period', width: 20, format: v => formatPeriod(v) },
+        { key: 'salesCount', label: 'Transactions', width: 15 },
+        { key: 'totalAmount', label: 'Total Amount (₦)', width: 18 },
+        { key: 'totalPaid', label: 'Amount Paid (₦)', width: 18 },
+        { key: 'totalOutstanding', label: 'Outstanding (₦)', width: 18 }
+      ]
+    })
+  }
+
+  const handleExportPDF = () => {
+    exportReportToPDF({
+      filename: `total-sales-report-${new Date().toISOString().split('T')[0]}`,
+      title: 'Total Sales Report',
+      subtitle: `Period: ${startDate?.toLocaleDateString() || 'All Time'} - ${endDate?.toLocaleDateString() || 'Present'}`,
+      orientation: 'landscape',
+      sections: [
+        {
+          title: 'Summary',
+          type: 'summary',
+          summaryItems: [
+            { label: 'Total Transactions', value: summary.totalTransactions },
+            { label: 'Quantity Sold', value: summary.totalQuantitySold.toLocaleString() },
+            { label: 'Total Revenue', value: `₦${summary.totalRevenue.toLocaleString()}` },
+            { label: 'Amount Collected', value: `₦${summary.totalPaid.toLocaleString()}` },
+            { label: 'Outstanding', value: `₦${summary.totalOutstanding.toLocaleString()}` }
+          ]
+        },
+        {
+          title: 'Payment Methods Breakdown',
+          type: 'table',
+          data: paymentMethods,
+          columns: [
+            { key: 'paymentMode', label: 'Payment Method', format: v => getPaymentModeLabel(v) },
+            { key: 'salesCount', label: 'Transactions' },
+            { key: 'totalAmount', label: 'Total Amount (₦)', format: v => `₦${Number(v).toLocaleString()}` }
+          ]
+        },
+        {
+          title: `Sales by ${groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}`,
+          type: 'table',
+          data: periods,
+          columns: [
+            { key: 'period', label: 'Period', format: v => formatPeriod(v) },
+            { key: 'salesCount', label: 'Transactions' },
+            { key: 'totalAmount', label: 'Total (₦)', format: v => `₦${Number(v).toLocaleString()}` },
+            { key: 'totalPaid', label: 'Paid (₦)', format: v => `₦${Number(v).toLocaleString()}` },
+            { key: 'totalOutstanding', label: 'Outstanding (₦)', format: v => `₦${Number(v).toLocaleString()}` }
+          ]
+        }
+      ]
+    })
   }
 
   const handlePrint = () => {
-    window.print()
+    printPage()
   }
 
   const formatPeriod = (period: string) => {
@@ -141,8 +207,11 @@ export default function TotalSalesReportPage() {
             <IconButton onClick={fetchReport} title='Refresh'>
               <RefreshIcon />
             </IconButton>
-            <Button variant='outlined' startIcon={<DownloadIcon />} onClick={() => handleExport('excel')}>
+            <Button variant='outlined' startIcon={<DownloadIcon />} onClick={handleExportExcel}>
               Export Excel
+            </Button>
+            <Button variant='outlined' startIcon={<PictureAsPdfIcon />} onClick={handleExportPDF}>
+              Export PDF
             </Button>
             <Button variant='outlined' startIcon={<PrintIcon />} onClick={handlePrint}>
               Print
@@ -229,13 +298,7 @@ export default function TotalSalesReportPage() {
                 />
               </Grid>
               <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  select
-                  label='Group By'
-                  value={groupBy}
-                  onChange={e => setGroupBy(e.target.value)}
-                >
+                <TextField fullWidth select label='Group By' value={groupBy} onChange={e => setGroupBy(e.target.value)}>
                   <MenuItem value='day'>Daily</MenuItem>
                   <MenuItem value='week'>Weekly</MenuItem>
                   <MenuItem value='month'>Monthly</MenuItem>

@@ -232,6 +232,15 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
       resource: Resource.USERS,
       action: Action.MANAGE
     }
+  },
+  {
+    label: 'Audit Logs',
+    href: '/audit-logs',
+    icon: 'ri-history-line',
+    permission: {
+      resource: Resource.USERS,
+      action: Action.MANAGE
+    }
   }
 ]
 

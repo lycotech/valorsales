@@ -122,12 +122,10 @@ export async function GET(request: NextRequest) {
       const customerData = customerMap.get(customerId)
 
       // Calculate aging days
-      const agingDays = Math.floor(
-        (new Date().getTime() - new Date(sale.supplyDate).getTime()) / (1000 * 60 * 60 * 24)
-      )
+      const agingDays = Math.floor((new Date().getTime() - new Date(sale.supplyDate).getTime()) / (1000 * 60 * 60 * 24))
 
       customerData.salesCount += 1
-      customerData.totalSales += Number(sale.totalAmount)
+      customerData.totalSales += Number(sale.total)
       customerData.totalPaid += Number(sale.amountPaid)
       customerData.totalReceivable += Number(sale.balance)
       customerData.sales.push({
@@ -137,7 +135,7 @@ export async function GET(request: NextRequest) {
         productCode: sale.product.productCode,
         productName: sale.product.productName,
         quantity: Number(sale.quantity),
-        totalAmount: Number(sale.totalAmount),
+        totalAmount: Number(sale.total),
         amountPaid: Number(sale.amountPaid),
         balance: Number(sale.balance),
         status: sale.status,
@@ -147,9 +145,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Convert Map to array and sort by receivable amount (descending)
-    const customerReceivables = Array.from(customerMap.values()).sort(
-      (a, b) => b.totalReceivable - a.totalReceivable
-    )
+    const customerReceivables = Array.from(customerMap.values()).sort((a, b) => b.totalReceivable - a.totalReceivable)
 
     // Calculate grand totals
     const summary = {
@@ -168,9 +164,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching outstanding receivables:', error)
 
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch outstanding receivables' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Failed to fetch outstanding receivables' }, { status: 500 })
   }
 }

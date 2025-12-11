@@ -5,6 +5,7 @@ import { verifyToken } from '@/lib/auth/jwt'
 import { hasPermission, Resource, Action } from '@/lib/auth/permissions'
 import { prisma } from '@/lib/db/client'
 import { createSaleSchema } from '@/types/salesTypes'
+import { logCreate, logUpdate, logDelete, getRequestDetails } from '@/lib/auditLogger'
 
 // Helper function to generate unique sale code
 async function generateSaleCode(): Promise<string> {
@@ -132,12 +133,13 @@ export async function GET(request: NextRequest) {
       amountPaid: parseFloat(sale.amountPaid.toString()),
       balance: parseFloat(sale.balance.toString()),
       paymentCount: sale._count.payments,
-      items: sale.items?.map((item: any) => ({
-        ...item,
-        quantity: parseFloat(item.quantity.toString()),
-        price: parseFloat(item.price.toString()),
-        total: parseFloat(item.total.toString())
-      })) || []
+      items:
+        sale.items?.map((item: any) => ({
+          ...item,
+          quantity: parseFloat(item.quantity.toString()),
+          price: parseFloat(item.price.toString()),
+          total: parseFloat(item.total.toString())
+        })) || []
     }))
 
     return NextResponse.json({
@@ -223,7 +225,8 @@ export async function POST(request: NextRequest) {
 
     // Verify all products exist and calculate total
     let total = 0
-    const itemsWithProducts: { productId: string; product: any; quantity: number; price: number; subtotal: number }[] = []
+    const itemsWithProducts: { productId: string; product: any; quantity: number; price: number; subtotal: number }[] =
+      []
 
     for (const item of data.items) {
       const product = await prisma.product.findUnique({
@@ -256,7 +259,9 @@ export async function POST(request: NextRequest) {
     // Check if using credit balance
     const currentCreditBalance = parseFloat(customer.creditBalance.toString())
     const useCreditBalance = body.useCreditBalance && currentCreditBalance > 0
-    const creditToUse = useCreditBalance ? Math.min(body.creditBalanceToUse || currentCreditBalance, total, currentCreditBalance) : 0
+    const creditToUse = useCreditBalance
+      ? Math.min(body.creditBalanceToUse || currentCreditBalance, total, currentCreditBalance)
+      : 0
 
     // Total payment = cash payment + credit used
     const totalPayment = data.amountPaid + creditToUse
@@ -291,7 +296,9 @@ export async function POST(request: NextRequest) {
           where: { id: data.customerId },
           data: { creditBalance: currentCreditBalance - creditToUse }
         })
-        console.log(`[SALE] Deducted ${creditToUse} from customer credit balance. New balance: ${currentCreditBalance - creditToUse}`)
+        console.log(
+          `[SALE] Deducted ${creditToUse} from customer credit balance. New balance: ${currentCreditBalance - creditToUse}`
+        )
       }
 
       // Check inventory availability for ALL products first
@@ -300,7 +307,10 @@ export async function POST(request: NextRequest) {
           where: { productId: item.productId }
         })
 
-        console.log(`[SALE] Inventory lookup for product ${item.product.productName}:`, inventory ? `Found - Qty: ${inventory.quantity}` : 'NOT FOUND')
+        console.log(
+          `[SALE] Inventory lookup for product ${item.product.productName}:`,
+          inventory ? `Found - Qty: ${inventory.quantity}` : 'NOT FOUND'
+        )
 
         if (!inventory) {
           throw new Error(`No inventory record found for product ${item.product.productName}`)
@@ -358,7 +368,9 @@ export async function POST(request: NextRequest) {
         const availableQty = Number(inventory.quantity)
         const newQuantity = availableQty - item.quantity
 
-        console.log(`[SALE] Deducting inventory - Product: ${item.product.productName}, Before: ${availableQty}, Deduct: ${item.quantity}, After: ${newQuantity}`)
+        console.log(
+          `[SALE] Deducting inventory - Product: ${item.product.productName}, Before: ${availableQty}, Deduct: ${item.quantity}, After: ${newQuantity}`
+        )
 
         await tx.productInventory.update({
           where: { productId: item.productId },
@@ -528,6 +540,25 @@ export async function POST(request: NextRequest) {
     if (messageParts.length > 0) {
       message = `Sale created. ${messageParts.join(', ')}.`
     }
+
+    // Audit log
+    const reqDetails = getRequestDetails(request)
+
+    logCreate(
+      'sale',
+      saleResult.sale.id,
+      {
+        saleCode,
+        customerId: data.customerId,
+        total,
+        amountPaid: amountForThisSale,
+        balance: saleBalance,
+        status,
+        items: data.items.length
+      },
+      payload.userId,
+      reqDetails
+    )
 
     return NextResponse.json(
       {

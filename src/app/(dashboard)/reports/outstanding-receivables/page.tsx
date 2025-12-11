@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 import { useRouter } from 'next/navigation'
 
@@ -34,6 +34,9 @@ import PrintIcon from '@mui/icons-material/Print'
 import DownloadIcon from '@mui/icons-material/Download'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
+
+import { exportToExcel, exportReportToPDF, printPage } from '@/utils/exportHelpers'
 
 interface SaleDetail {
   id: string
@@ -73,6 +76,7 @@ interface ReportSummary {
 
 export default function OutstandingReceivablesPage() {
   const router = useRouter()
+  const isMounted = useRef(false)
   const [customers, setCustomers] = useState<CustomerReceivable[]>([])
 
   const [summary, setSummary] = useState<ReportSummary>({
@@ -111,30 +115,118 @@ export default function OutstandingReceivablesPage() {
       const response = await fetch(`/api/reports/outstanding-receivables?${params}`)
       const result = await response.json()
 
+      if (!isMounted.current) return
+
       if (result.success) {
-        setCustomers(result.data)
-        setSummary(result.summary)
+        setCustomers(result.data || [])
+        setSummary(
+          result.summary || {
+            totalCustomers: 0,
+            totalSales: 0,
+            totalAmount: 0,
+            totalPaid: 0,
+            totalReceivable: 0
+          }
+        )
       } else {
         console.error('Failed to fetch report:', result.error)
       }
     } catch (error) {
       console.error('Error fetching report:', error)
     } finally {
-      setLoading(false)
+      if (isMounted.current) {
+        setLoading(false)
+      }
     }
   }, [status, startDate, endDate, agingDays])
 
   useEffect(() => {
+    isMounted.current = true
     fetchReport()
+
+    return () => {
+      isMounted.current = false
+    }
   }, [fetchReport])
 
-  const handleExport = (format: 'csv' | 'excel') => {
-    // TODO: Implement export functionality
-    console.log(`Exporting as ${format}`)
+  const handleExportExcel = () => {
+    // Flatten customer data for Excel export
+    const flatData = customers.flatMap(customer =>
+      customer.sales.map(sale => ({
+        customerCode: customer.customerCode,
+        customerName: customer.customerName,
+        phone: customer.phone,
+        location: customer.location,
+        saleId: sale.id,
+        supplyDate: new Date(sale.supplyDate).toLocaleDateString(),
+        productName: sale.productName,
+        quantity: sale.quantity,
+        totalAmount: sale.totalAmount,
+        amountPaid: sale.amountPaid,
+        balance: sale.balance,
+        status: sale.status,
+        agingDays: sale.agingDays
+      }))
+    )
+
+    exportToExcel(flatData, {
+      filename: `outstanding-receivables-${new Date().toISOString().split('T')[0]}`,
+      sheetName: 'Outstanding Receivables',
+      title: 'Outstanding Receivables Report',
+      subtitle: `Generated: ${new Date().toLocaleDateString()}`,
+      columns: [
+        { key: 'customerCode', label: 'Customer Code', width: 15 },
+        { key: 'customerName', label: 'Customer Name', width: 25 },
+        { key: 'phone', label: 'Phone', width: 15 },
+        { key: 'supplyDate', label: 'Supply Date', width: 15 },
+        { key: 'productName', label: 'Product', width: 20 },
+        { key: 'quantity', label: 'Qty', width: 10 },
+        { key: 'totalAmount', label: 'Total (₦)', width: 15 },
+        { key: 'amountPaid', label: 'Paid (₦)', width: 15 },
+        { key: 'balance', label: 'Balance (₦)', width: 15 },
+        { key: 'agingDays', label: 'Days', width: 10 }
+      ]
+    })
+  }
+
+  const handleExportPDF = () => {
+    exportReportToPDF({
+      filename: `outstanding-receivables-${new Date().toISOString().split('T')[0]}`,
+      title: 'Outstanding Receivables Report',
+      subtitle: `As of ${new Date().toLocaleDateString()}`,
+      orientation: 'landscape',
+      sections: [
+        {
+          title: 'Summary',
+          type: 'summary',
+          summaryItems: [
+            { label: 'Total Customers', value: summary.totalCustomers },
+            { label: 'Total Sales', value: summary.totalSales },
+            { label: 'Total Amount', value: `₦${summary.totalAmount.toLocaleString()}` },
+            { label: 'Total Paid', value: `₦${summary.totalPaid.toLocaleString()}` },
+            { label: 'Total Outstanding', value: `₦${summary.totalReceivable.toLocaleString()}` }
+          ]
+        },
+        {
+          title: 'Customer Outstanding Details',
+          type: 'table',
+          data: customers,
+          columns: [
+            { key: 'customerCode', label: 'Code' },
+            { key: 'customerName', label: 'Customer' },
+            { key: 'phone', label: 'Phone' },
+            { key: 'salesCount', label: 'Sales' },
+            { key: 'totalSales', label: 'Total (₦)', format: v => `₦${Number(v).toLocaleString()}` },
+            { key: 'totalPaid', label: 'Paid (₦)', format: v => `₦${Number(v).toLocaleString()}` },
+            { key: 'totalReceivable', label: 'Balance (₦)', format: v => `₦${Number(v).toLocaleString()}` }
+          ]
+        }
+      ]
+    })
   }
 
   const handlePrint = () => {
-    window.print()
+    printPage()
   }
 
   const handleAccordionChange = (customerId: string) => (_: React.SyntheticEvent, isExpanded: boolean) => {
@@ -194,21 +286,21 @@ export default function OutstandingReceivablesPage() {
       headerName: 'Total Amount',
       width: 140,
       type: 'number',
-      valueFormatter: (value) => `₦${(value as number)?.toLocaleString() || 0}`
+      valueFormatter: value => `₦${(value as number)?.toLocaleString() || 0}`
     },
     {
       field: 'totalPaid',
       headerName: 'Amount Paid',
       width: 140,
       type: 'number',
-      valueFormatter: (value) => `₦${(value as number)?.toLocaleString() || 0}`
+      valueFormatter: value => `₦${(value as number)?.toLocaleString() || 0}`
     },
     {
       field: 'totalReceivable',
       headerName: 'Receivable',
       width: 140,
       type: 'number',
-      valueFormatter: (value) => `₦${(value as number)?.toLocaleString() || 0}`,
+      valueFormatter: value => `₦${(value as number)?.toLocaleString() || 0}`,
       cellClassName: () => 'text-error'
     }
   ]
@@ -223,8 +315,11 @@ export default function OutstandingReceivablesPage() {
             <IconButton onClick={fetchReport} title='Refresh'>
               <RefreshIcon />
             </IconButton>
-            <Button variant='outlined' startIcon={<DownloadIcon />} onClick={() => handleExport('excel')}>
+            <Button variant='outlined' startIcon={<DownloadIcon />} onClick={handleExportExcel}>
               Export Excel
+            </Button>
+            <Button variant='outlined' startIcon={<PictureAsPdfIcon />} onClick={handleExportPDF}>
+              Export PDF
             </Button>
             <Button variant='outlined' startIcon={<PrintIcon />} onClick={handlePrint}>
               Print
@@ -293,13 +388,7 @@ export default function OutstandingReceivablesPage() {
           <CardContent>
             <Grid container spacing={2}>
               <Grid item xs={12} md={3}>
-                <TextField
-                  fullWidth
-                  select
-                  label='Status'
-                  value={status}
-                  onChange={e => setStatus(e.target.value)}
-                >
+                <TextField fullWidth select label='Status' value={status} onChange={e => setStatus(e.target.value)}>
                   <MenuItem value='all'>All Outstanding</MenuItem>
                   <MenuItem value='partial'>Partially Paid</MenuItem>
                   <MenuItem value='pending'>Pending Payment</MenuItem>
@@ -421,11 +510,7 @@ export default function OutstandingReceivablesPage() {
                           <Chip label={sale.status} color={getStatusColor(sale.status)} size='small' />
                         </TableCell>
                         <TableCell>
-                          <Chip
-                            label={`${sale.agingDays} days`}
-                            color={getAgingColor(sale.agingDays)}
-                            size='small'
-                          />
+                          <Chip label={`${sale.agingDays} days`} color={getAgingColor(sale.agingDays)} size='small' />
                         </TableCell>
                         <TableCell>
                           <Button size='small' onClick={() => router.push(`/sales/${sale.id}`)}>

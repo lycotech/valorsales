@@ -1,22 +1,16 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
-import {
-  Card,
-  CardContent,
-  Typography,
-  Grid,
-  TextField,
-  Box,
-  Button,
-  IconButton
-} from '@mui/material'
+import { Card, CardContent, Typography, Grid, TextField, Box, Button, IconButton } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
 import type { GridPaginationModel, GridSortModel, GridColDef } from '@mui/x-data-grid'
 import PrintIcon from '@mui/icons-material/Print'
 import DownloadIcon from '@mui/icons-material/Download'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
+
+import { exportToExcel, exportReportToPDF, printPage } from '@/utils/exportHelpers'
 
 interface CustomerReportData {
   id: string
@@ -39,6 +33,7 @@ interface ReportSummary {
 }
 
 export default function CustomerReportPage() {
+  const isMounted = useRef(false)
   const [customers, setCustomers] = useState<CustomerReportData[]>([])
 
   const [summary, setSummary] = useState<ReportSummary>({
@@ -73,6 +68,8 @@ export default function CustomerReportPage() {
       const response = await fetch(`/api/reports/customers?${params}`)
       const result = await response.json()
 
+      if (!isMounted.current) return
+
       if (result.success) {
         setCustomers(result.data)
         setSummary(result.summary)
@@ -82,12 +79,19 @@ export default function CustomerReportPage() {
     } catch (error) {
       console.error('Error fetching report:', error)
     } finally {
-      setLoading(false)
+      if (isMounted.current) {
+        setLoading(false)
+      }
     }
   }, [search, location, sortBy, sortOrder])
 
   useEffect(() => {
+    isMounted.current = true
     fetchReport()
+
+    return () => {
+      isMounted.current = false
+    }
   }, [fetchReport])
 
   const handleSortModelChange = (model: GridSortModel) => {
@@ -97,13 +101,62 @@ export default function CustomerReportPage() {
     }
   }
 
-  const handleExport = (format: 'csv' | 'excel') => {
-    // TODO: Implement export functionality
-    console.log(`Exporting as ${format}`)
+  const handleExportExcel = () => {
+    exportToExcel(customers, {
+      filename: `customers-report-${new Date().toISOString().split('T')[0]}`,
+      sheetName: 'Customers',
+      title: 'Customer List Report',
+      columns: [
+        { key: 'customerCode', label: 'Customer Code', width: 15 },
+        { key: 'businessName', label: 'Business Name', width: 30 },
+        { key: 'contactPerson', label: 'Contact Person', width: 20 },
+        { key: 'phone', label: 'Phone', width: 15 },
+        { key: 'location', label: 'Location', width: 20 },
+        { key: 'totalTransactions', label: 'Transactions', width: 15 },
+        { key: 'totalSales', label: 'Total Sales (₦)', width: 18 },
+        { key: 'totalOutstanding', label: 'Outstanding (₦)', width: 18 }
+      ]
+    })
+  }
+
+  const handleExportPDF = () => {
+    exportReportToPDF({
+      filename: `customers-report-${new Date().toISOString().split('T')[0]}`,
+      title: 'Customer List Report',
+      subtitle: `Generated: ${new Date().toLocaleDateString()}`,
+      orientation: 'landscape',
+      sections: [
+        {
+          title: 'Summary',
+          type: 'summary',
+          summaryItems: [
+            { label: 'Total Customers', value: summary.totalCustomers },
+            { label: 'Total Transactions', value: summary.totalTransactions },
+            { label: 'Total Sales', value: `₦${summary.totalSales.toLocaleString()}` },
+            { label: 'Total Outstanding', value: `₦${summary.totalOutstanding.toLocaleString()}` }
+          ]
+        },
+        {
+          title: 'Customer Details',
+          type: 'table',
+          data: customers,
+          columns: [
+            { key: 'customerCode', label: 'Code' },
+            { key: 'businessName', label: 'Business Name' },
+            { key: 'contactPerson', label: 'Contact' },
+            { key: 'phone', label: 'Phone' },
+            { key: 'location', label: 'Location' },
+            { key: 'totalTransactions', label: 'Trans.' },
+            { key: 'totalSales', label: 'Sales (₦)', format: v => `₦${Number(v).toLocaleString()}` },
+            { key: 'totalOutstanding', label: 'Outstanding (₦)', format: v => `₦${Number(v).toLocaleString()}` }
+          ]
+        }
+      ]
+    })
   }
 
   const handlePrint = () => {
-    window.print()
+    printPage()
   }
 
   const columns: GridColDef[] = [
@@ -150,7 +203,7 @@ export default function CustomerReportPage() {
       width: 140,
       type: 'number',
       sortable: false,
-      valueFormatter: (value) => `₦${(value as number)?.toLocaleString() || 0}`
+      valueFormatter: value => `₦${(value as number)?.toLocaleString() || 0}`
     },
     {
       field: 'totalOutstanding',
@@ -158,15 +211,15 @@ export default function CustomerReportPage() {
       width: 140,
       type: 'number',
       sortable: false,
-      valueFormatter: (value) => `₦${(value as number)?.toLocaleString() || 0}`,
-      cellClassName: (params) => (params.value > 0 ? 'text-error' : 'text-success')
+      valueFormatter: value => `₦${(value as number)?.toLocaleString() || 0}`,
+      cellClassName: params => (params.value > 0 ? 'text-error' : 'text-success')
     },
     {
       field: 'createdAt',
       headerName: 'Registered',
       width: 120,
       sortable: true,
-      valueFormatter: (value) => new Date(value).toLocaleDateString()
+      valueFormatter: value => new Date(value).toLocaleDateString()
     }
   ]
 
@@ -179,18 +232,13 @@ export default function CustomerReportPage() {
           <IconButton onClick={fetchReport} title='Refresh'>
             <RefreshIcon />
           </IconButton>
-          <Button
-            variant='outlined'
-            startIcon={<DownloadIcon />}
-            onClick={() => handleExport('excel')}
-          >
+          <Button variant='outlined' startIcon={<DownloadIcon />} onClick={handleExportExcel}>
             Export Excel
           </Button>
-          <Button
-            variant='outlined'
-            startIcon={<PrintIcon />}
-            onClick={handlePrint}
-          >
+          <Button variant='outlined' startIcon={<PictureAsPdfIcon />} onClick={handleExportPDF}>
+            Export PDF
+          </Button>
+          <Button variant='outlined' startIcon={<PrintIcon />} onClick={handlePrint}>
             Print
           </Button>
         </Box>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 import {
   Card,
@@ -22,6 +22,9 @@ import PrintIcon from '@mui/icons-material/Print'
 import DownloadIcon from '@mui/icons-material/Download'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
+
+import { exportToExcel, exportReportToPDF, printPage } from '@/utils/exportHelpers'
 
 interface RawMaterial {
   id: string
@@ -52,6 +55,7 @@ interface ReportSummary {
 }
 
 export default function SupplierReportPage() {
+  const isMounted = useRef(false)
   const [suppliers, setSuppliers] = useState<SupplierReportData[]>([])
 
   const [summary, setSummary] = useState<ReportSummary>({
@@ -89,6 +93,8 @@ export default function SupplierReportPage() {
       const response = await fetch(`/api/reports/suppliers?${params}`)
       const result = await response.json()
 
+      if (!isMounted.current) return
+
       if (result.success) {
         setSuppliers(result.data)
         setSummary(result.summary)
@@ -98,12 +104,19 @@ export default function SupplierReportPage() {
     } catch (error) {
       console.error('Error fetching report:', error)
     } finally {
-      setLoading(false)
+      if (isMounted.current) {
+        setLoading(false)
+      }
     }
   }, [search, location, sortBy, sortOrder])
 
   useEffect(() => {
+    isMounted.current = true
     fetchReport()
+
+    return () => {
+      isMounted.current = false
+    }
   }, [fetchReport])
 
   const handleSortModelChange = (model: GridSortModel) => {
@@ -113,13 +126,74 @@ export default function SupplierReportPage() {
     }
   }
 
-  const handleExport = (format: 'csv' | 'excel') => {
-    // TODO: Implement export functionality
-    console.log(`Exporting as ${format}`)
+  const handleExportExcel = () => {
+    const exportData = suppliers.map(s => ({
+      supplierCode: s.supplierCode,
+      name: s.name,
+      phone: s.phone,
+      location: s.location,
+      materials: s.rawMaterials.map(m => m.materialName).join(', '),
+      totalTransactions: s.totalTransactions,
+      totalPurchases: s.totalPurchases,
+      totalOutstanding: s.totalOutstanding
+    }))
+
+    exportToExcel(exportData, {
+      filename: `suppliers-report-${new Date().toISOString().split('T')[0]}`,
+      sheetName: 'Suppliers',
+      title: 'Supplier List Report',
+      columns: [
+        { key: 'supplierCode', label: 'Supplier Code', width: 15 },
+        { key: 'name', label: 'Supplier Name', width: 25 },
+        { key: 'phone', label: 'Phone', width: 15 },
+        { key: 'location', label: 'Location', width: 20 },
+        { key: 'materials', label: 'Raw Materials', width: 40 },
+        { key: 'totalTransactions', label: 'Transactions', width: 15 },
+        { key: 'totalPurchases', label: 'Total Purchases (₦)', width: 18 },
+        { key: 'totalOutstanding', label: 'Outstanding (₦)', width: 18 }
+      ]
+    })
+  }
+
+  const handleExportPDF = () => {
+    exportReportToPDF({
+      filename: `suppliers-report-${new Date().toISOString().split('T')[0]}`,
+      title: 'Supplier List Report',
+      subtitle: `Generated: ${new Date().toLocaleDateString()}`,
+      orientation: 'landscape',
+      sections: [
+        {
+          title: 'Summary',
+          type: 'summary',
+          summaryItems: [
+            { label: 'Total Suppliers', value: summary.totalSuppliers },
+            { label: 'Total Materials', value: summary.totalMaterials },
+            { label: 'Total Transactions', value: summary.totalTransactions },
+            { label: 'Total Purchases', value: `₦${summary.totalPurchases.toLocaleString()}` },
+            { label: 'Total Outstanding', value: `₦${summary.totalOutstanding.toLocaleString()}` }
+          ]
+        },
+        {
+          title: 'Supplier Details',
+          type: 'table',
+          data: suppliers,
+          columns: [
+            { key: 'supplierCode', label: 'Code' },
+            { key: 'name', label: 'Supplier' },
+            { key: 'phone', label: 'Phone' },
+            { key: 'location', label: 'Location' },
+            { key: 'totalMaterials', label: 'Materials' },
+            { key: 'totalTransactions', label: 'Trans.' },
+            { key: 'totalPurchases', label: 'Purchases (₦)', format: v => `₦${Number(v).toLocaleString()}` },
+            { key: 'totalOutstanding', label: 'Outstanding (₦)', format: v => `₦${Number(v).toLocaleString()}` }
+          ]
+        }
+      ]
+    })
   }
 
   const handlePrint = () => {
-    window.print()
+    printPage()
   }
 
   const handleAccordionChange = (supplierId: string) => (_: React.SyntheticEvent, isExpanded: boolean) => {
@@ -171,7 +245,7 @@ export default function SupplierReportPage() {
       width: 150,
       type: 'number',
       sortable: false,
-      valueFormatter: (value) => `₦${(value as number)?.toLocaleString() || 0}`
+      valueFormatter: value => `₦${(value as number)?.toLocaleString() || 0}`
     },
     {
       field: 'totalOutstanding',
@@ -179,8 +253,8 @@ export default function SupplierReportPage() {
       width: 140,
       type: 'number',
       sortable: false,
-      valueFormatter: (value) => `₦${(value as number)?.toLocaleString() || 0}`,
-      cellClassName: (params) => (params.value > 0 ? 'text-error' : 'text-success')
+      valueFormatter: value => `₦${(value as number)?.toLocaleString() || 0}`,
+      cellClassName: params => (params.value > 0 ? 'text-error' : 'text-success')
     }
   ]
 
@@ -193,8 +267,11 @@ export default function SupplierReportPage() {
           <IconButton onClick={fetchReport} title='Refresh'>
             <RefreshIcon />
           </IconButton>
-          <Button variant='outlined' startIcon={<DownloadIcon />} onClick={() => handleExport('excel')}>
+          <Button variant='outlined' startIcon={<DownloadIcon />} onClick={handleExportExcel}>
             Export Excel
+          </Button>
+          <Button variant='outlined' startIcon={<PictureAsPdfIcon />} onClick={handleExportPDF}>
+            Export PDF
           </Button>
           <Button variant='outlined' startIcon={<PrintIcon />} onClick={handlePrint}>
             Print

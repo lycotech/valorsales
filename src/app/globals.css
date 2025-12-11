@@ -131,3 +131,194 @@ code {
   background-color: rgb(var(--mui-palette-info-mainChannel) / 0.08);
   border: 0;
 }
+
+/* ============================================
+   PRINT-FRIENDLY STYLES
+   ============================================ */
+
+@media print {
+  /* Hide non-printable elements */
+  .no-print,
+  .MuiAppBar-root,
+  .MuiDrawer-root,
+  nav,
+  aside,
+  footer:not(.print-footer),
+  .MuiFab-root,
+  .MuiSpeedDial-root,
+  button:not(.print-button),
+  [role='navigation'],
+  [data-testid='sidebar'],
+  .sidebar,
+  .navbar,
+  .header-actions {
+    display: none !important;
+  }
+
+  /* Reset page margins */
+  @page {
+    margin: 1cm;
+    size: auto;
+  }
+
+  /* Ensure content takes full width */
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Main content area */
+  main,
+  .main-content,
+  .MuiContainer-root {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-inline-size: 100% !important;
+    inline-size: 100% !important;
+  }
+
+  /* Card styling for print */
+  .MuiCard-root,
+  .MuiPaper-root {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    break-inside: avoid;
+    margin-block-end: 10px !important;
+  }
+
+  /* Table styling for print */
+  table {
+    border-collapse: collapse !important;
+    inline-size: 100% !important;
+  }
+
+  th,
+  td {
+    border: 1px solid #ddd !important;
+    padding: 8px !important;
+    text-align: start !important;
+  }
+
+  th {
+    background-color: #f5f5f5 !important;
+    font-weight: bold !important;
+  }
+
+  tr:nth-child(even) {
+    background-color: #fafafa !important;
+  }
+
+  /* DataGrid styling for print */
+  .MuiDataGrid-root {
+    border: 1px solid #ddd !important;
+  }
+
+  .MuiDataGrid-columnHeaders {
+    background-color: #f5f5f5 !important;
+  }
+
+  .MuiDataGrid-footerContainer,
+  .MuiDataGrid-toolbarContainer {
+    display: none !important;
+  }
+
+  /* Links styling */
+  a {
+    text-decoration: none !important;
+    color: inherit !important;
+  }
+
+  /* Charts - hide or show placeholder */
+  canvas,
+  .chart-container {
+    max-inline-size: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  /* Typography adjustments */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    page-break-after: avoid;
+  }
+
+  p,
+  span,
+  div {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Image handling */
+  img {
+    max-inline-size: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  /* Preserve colors for chips and status indicators */
+  .MuiChip-root {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Print header for reports */
+  .print-header {
+    display: block !important;
+    text-align: center;
+    margin-block-end: 20px;
+    padding-block-end: 10px;
+    border-block-end: 2px solid #333;
+  }
+
+  .print-header h1 {
+    margin-block: 0 5px;
+    margin-inline: 0;
+    font-size: 24px;
+  }
+
+  .print-header p {
+    margin: 0;
+    color: #666;
+    font-size: 12px;
+  }
+
+  /* Print footer */
+  .print-footer {
+    display: block !important;
+    position: fixed;
+    inset-block-end: 0;
+    inset-inline: 0;
+    text-align: center;
+    padding: 10px;
+    font-size: 10px;
+    color: #666;
+    border-block-start: 1px solid #ddd;
+  }
+}
+
+/* Screen-only styles (hide print elements on screen) */
+@media screen {
+  .print-only,
+  .print-header,
+  .print-footer {
+    display: none !important;
+  }
+}
+
+/* Utility class for printable areas */
+.printable-area {
+  background: white;
+  padding: 20px;
+}
+
+@media print {
+  .printable-area {
+    padding: 0;
+  }
+}

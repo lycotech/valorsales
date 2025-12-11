@@ -3,13 +3,14 @@
  * Handles customer listing and creation with auto-generated codes
  */
 
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 
 import { verifyToken } from '@/lib/auth/jwt'
 import { hasPermission, Resource, Action } from '@/lib/auth/permissions'
 import prisma from '@/lib/db/client'
 import { createCustomerSchema } from '@/types/customerTypes'
+import { logCreate, getRequestDetails } from '@/lib/auditLogger'
 
 /**
  * GET /api/customers
@@ -27,15 +28,15 @@ export async function GET(request: NextRequest) {
     const payload = verifyToken(token)
 
     if (!payload) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized', message: 'Invalid token' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: 'Unauthorized', message: 'Invalid token' }, { status: 401 })
     }
 
     // 2. Check permissions (Admin, Sales Officer can read customers)
     if (!hasPermission(payload.role as any, Resource.CUSTOMERS, Action.READ)) {
-      return NextResponse.json({ success: false, error: 'Forbidden', message: 'Insufficient permissions' }, { status: 403 })
+      return NextResponse.json(
+        { success: false, error: 'Forbidden', message: 'Insufficient permissions' },
+        { status: 403 }
+      )
     }
 
     // 3. Get query parameters for search and pagination
@@ -113,15 +114,15 @@ export async function POST(request: NextRequest) {
     const payload = verifyToken(token)
 
     if (!payload) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized', message: 'Invalid token' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: 'Unauthorized', message: 'Invalid token' }, { status: 401 })
     }
 
     // 2. Check permissions (Admin, Sales Officer can create customers)
     if (!hasPermission(payload.role as any, Resource.CUSTOMERS, Action.CREATE)) {
-      return NextResponse.json({ success: false, error: 'Forbidden', message: 'Insufficient permissions' }, { status: 403 })
+      return NextResponse.json(
+        { success: false, error: 'Forbidden', message: 'Insufficient permissions' },
+        { status: 403 }
+      )
     }
 
     // 3. Parse and validate request body
@@ -185,7 +186,18 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // 7. Return response
+    // 7. Audit log
+    const reqDetails = getRequestDetails(request)
+
+    logCreate(
+      'customer',
+      customer.id,
+      { customerCode, businessName: data.businessName, location: data.location },
+      payload.userId,
+      reqDetails
+    )
+
+    // 8. Return response
     return NextResponse.json(
       {
         success: true,
@@ -207,4 +219,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

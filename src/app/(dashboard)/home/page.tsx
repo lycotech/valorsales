@@ -4,7 +4,38 @@ import { useEffect, useState } from 'react'
 
 import Link from 'next/link'
 
-import { Card, CardContent, Grid, Typography, Box, Chip, LinearProgress } from '@mui/material'
+import {
+  Card,
+  CardContent,
+  Grid,
+  Typography,
+  Box,
+  Chip,
+  LinearProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper
+} from '@mui/material'
+import { Line, Bar } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js'
+
+// Register Chart.js components
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler)
 
 type DashboardStats = {
   totalSales: {
@@ -41,28 +72,159 @@ type DashboardStats = {
   }
 }
 
+type ChartData = {
+  monthlySales: { month: string; label: string; total: number; count: number }[]
+  topProducts: {
+    productId: string
+    productName: string
+    productCode: string
+    quantitySold: number
+    totalRevenue: number
+  }[]
+  recentTransactions: {
+    id: string
+    type: 'sale' | 'purchase'
+    code: string
+    description: string
+    products: string
+    amount: number
+    status: string
+    date: string
+  }[]
+}
+
 export default function Page() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [chartData, setChartData] = useState<ChartData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchDashboardStats()
+    fetchDashboardData()
   }, [])
 
-  const fetchDashboardStats = async () => {
+  const fetchDashboardData = async () => {
     try {
-      const response = await fetch('/api/dashboard/stats')
+      const [statsResponse, chartsResponse] = await Promise.all([
+        fetch('/api/dashboard/stats'),
+        fetch('/api/dashboard/charts')
+      ])
 
-      if (response.ok) {
-        const data = await response.json()
+      if (statsResponse.ok) {
+        const data = await statsResponse.json()
 
         setStats(data.data)
       }
+
+      if (chartsResponse.ok) {
+        const data = await chartsResponse.json()
+
+        setChartData(data.data)
+      }
     } catch (error) {
-      console.error('Failed to fetch dashboard stats:', error)
+      console.error('Failed to fetch dashboard data:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  // Chart options
+  const salesTrendOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => `₦${context.parsed.y.toLocaleString()}`
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value: any) => `₦${(value / 1000).toFixed(0)}k`
+        }
+      }
+    }
+  }
+
+  const topProductsOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y' as const,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => `₦${context.parsed.x.toLocaleString()}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value: any) => `₦${(value / 1000).toFixed(0)}k`
+        }
+      }
+    }
+  }
+
+  // Prepare chart data
+  const salesTrendChartData = {
+    labels: chartData?.monthlySales.map(m => m.label) || [],
+    datasets: [
+      {
+        label: 'Sales',
+        data: chartData?.monthlySales.map(m => m.total) || [],
+        borderColor: 'rgb(99, 102, 241)',
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        fill: true,
+        tension: 0.4
+      }
+    ]
+  }
+
+  const topProductsChartData = {
+    labels:
+      chartData?.topProducts.map(p => p.productName.slice(0, 15) + (p.productName.length > 15 ? '...' : '')) || [],
+    datasets: [
+      {
+        label: 'Revenue',
+        data: chartData?.topProducts.map(p => p.totalRevenue) || [],
+        backgroundColor: [
+          'rgba(99, 102, 241, 0.8)',
+          'rgba(59, 130, 246, 0.8)',
+          'rgba(16, 185, 129, 0.8)',
+          'rgba(245, 158, 11, 0.8)',
+          'rgba(239, 68, 68, 0.8)'
+        ],
+        borderRadius: 4
+      }
+    ]
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return 'success'
+      case 'partial':
+        return 'warning'
+      case 'pending':
+        return 'error'
+      default:
+        return 'default'
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-NG', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
   }
 
   if (loading) {
@@ -326,6 +488,145 @@ export default function Page() {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Charts Row */}
+      <Grid container spacing={4}>
+        {/* Sales Trend Chart */}
+        <Grid item xs={12} md={8}>
+          <Card>
+            <CardContent>
+              <Box className='flex items-center justify-between mb-4'>
+                <Typography variant='h6' className='font-semibold'>
+                  Sales Trend (Last 6 Months)
+                </Typography>
+                <Link href='/reports/total-sales' className='text-primary hover:underline text-sm'>
+                  View Report
+                </Link>
+              </Box>
+              <Box sx={{ height: 300 }}>
+                {chartData?.monthlySales && chartData.monthlySales.length > 0 ? (
+                  <Line data={salesTrendChartData} options={salesTrendOptions} />
+                ) : (
+                  <Box className='flex items-center justify-center h-full text-gray-400'>
+                    <Typography>No sales data available</Typography>
+                  </Box>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Top Products Chart */}
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Box className='flex items-center justify-between mb-4'>
+                <Typography variant='h6' className='font-semibold'>
+                  Top Products (This Month)
+                </Typography>
+                <Link href='/reports/sales-by-product' className='text-primary hover:underline text-sm'>
+                  View All
+                </Link>
+              </Box>
+              <Box sx={{ height: 300 }}>
+                {chartData?.topProducts && chartData.topProducts.length > 0 ? (
+                  <Bar data={topProductsChartData} options={topProductsOptions} />
+                ) : (
+                  <Box className='flex items-center justify-center h-full text-gray-400'>
+                    <Typography>No product sales this month</Typography>
+                  </Box>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Recent Transactions */}
+      <Card>
+        <CardContent>
+          <Box className='flex items-center justify-between mb-4'>
+            <Typography variant='h6' className='font-semibold'>
+              Recent Transactions
+            </Typography>
+            <Box className='flex gap-2'>
+              <Link href='/sales' className='text-primary hover:underline text-sm'>
+                Sales
+              </Link>
+              <span className='text-gray-400'>|</span>
+              <Link href='/purchases' className='text-primary hover:underline text-sm'>
+                Purchases
+              </Link>
+            </Box>
+          </Box>
+          {chartData?.recentTransactions && chartData.recentTransactions.length > 0 ? (
+            <TableContainer component={Paper} variant='outlined'>
+              <Table size='small'>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Type</TableCell>
+                    <TableCell>Code</TableCell>
+                    <TableCell>Customer/Supplier</TableCell>
+                    <TableCell>Products</TableCell>
+                    <TableCell align='right'>Amount</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Date</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {chartData.recentTransactions.map(transaction => (
+                    <TableRow key={`${transaction.type}-${transaction.id}`} hover>
+                      <TableCell>
+                        <Chip
+                          label={transaction.type === 'sale' ? 'Sale' : 'Purchase'}
+                          size='small'
+                          color={transaction.type === 'sale' ? 'primary' : 'info'}
+                          variant='outlined'
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Link
+                          href={
+                            transaction.type === 'sale' ? `/sales/${transaction.id}` : `/purchases/${transaction.id}`
+                          }
+                          className='text-primary hover:underline'
+                        >
+                          {transaction.code}
+                        </Link>
+                      </TableCell>
+                      <TableCell>{transaction.description}</TableCell>
+                      <TableCell>
+                        <Typography variant='body2' noWrap sx={{ maxWidth: 200 }}>
+                          {transaction.products}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align='right'>
+                        <Typography fontWeight={500}>₦{transaction.amount.toLocaleString()}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={transaction.status}
+                          size='small'
+                          color={getStatusColor(transaction.status) as any}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant='body2' color='textSecondary'>
+                          {formatDate(transaction.date)}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Box className='flex items-center justify-center py-8 text-gray-400'>
+              <Typography>No recent transactions</Typography>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Quick Actions */}
       <Card>
