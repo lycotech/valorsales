@@ -225,8 +225,13 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     isSection: true
   },
   {
+    label: 'Profile',
+    href: '/settings/profile',
+    icon: 'ri-user-line'
+  },
+  {
     label: 'Users',
-    href: '/users',
+    href: '/admin/users',
     icon: 'ri-user-settings-line',
     permission: {
       resource: Resource.USERS,
