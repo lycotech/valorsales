@@ -1,0 +1,9 @@
+ignoredBuiltDependencies:
+  - '@prisma/engines'
+  - core-js
+  - esbuild
+  - sharp
+
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - prisma

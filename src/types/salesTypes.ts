@@ -17,7 +17,7 @@ export interface SaleItem extends BaseEntity {
   productId: string
   quantity: number
   price: number
-  subtotal: number
+  total: number
 }
 
 export interface SaleItemWithProduct extends SaleItem {
