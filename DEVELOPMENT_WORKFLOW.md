@@ -162,13 +162,14 @@ This workflow document provides a complete, step-by-step development plan for bu
 
 ## **PHASE 4: SALES TRANSACTION MODULE**
 
-### **Task 4.1: Sales Recording System**
+### **Task 4.1: Sales Recording System** ✅
 
 - [x] **Database Layer:**
   - Create Sales Transaction API routes (`/app/api/sales/route.ts`)
   - Implement transaction creation with all fields
   - Create payment tracking system
   - Add balance calculation logic
+  - **SaleItem model for multi-product sales**
 - [x] **UI Components:**
   - Create sales entry page (`/app/(dashboard)/sales/new/page.tsx`)
   - Implement product dropdown with search
@@ -176,16 +177,19 @@ This workflow document provides a complete, step-by-step development plan for bu
   - Create payment method selector
   - Add date picker for supply and payment dates
   - Implement credit sale handling
+  - **Multi-product sales form with dynamic item rows**
+  - **Product list table on sales detail page**
 - [x] **Business Logic:**
-  - Auto-calculate total (Qty × Price)
+  - Auto-calculate total (Qty × Price) per item
   - Auto-calculate balance (Total - Amount Paid)
-  - Validate payment amounts
+  - Validate payment amounts with rounding tolerance
   - Handle credit sales
   - Support multiple payment methods
+  - **Inventory deduction per product item**
 
-### **Task 4.2: Sales Management & Updates**
+### **Task 4.2: Sales Management & Updates** ✅
 
-- [x] **Database Layer:**
+- [x] **Database Layer:
   - Create API routes for updating sales records
   - Implement payment update functionality
   - Add audit trail for edits
@@ -201,9 +205,9 @@ This workflow document provides a complete, step-by-step development plan for bu
   - Maintain audit log for all changes
   - Prevent overpayment
 
-### **Task 4.3: Customer Outstanding Balances**
+### **Task 4.3: Customer Outstanding Balances** ✅
 
-- [x] **Database Layer:**
+- [x] **Database Layer:
   - Create API to fetch outstanding balances by customer
   - Aggregate all unpaid/partially paid sales
 - [x] **UI Components:**
@@ -219,7 +223,7 @@ This workflow document provides a complete, step-by-step development plan for bu
 
 ## **PHASE 5: SUPPLIER PAYMENT MODULE**
 
-### **Task 5.1: Raw Material Purchase Recording**
+### **Task 5.1: Raw Material Purchase Recording** ✅
 
 - [x] **Database Layer:**
   - Create Purchase API routes (`/app/api/purchases/route.ts`)
@@ -233,12 +237,13 @@ This workflow document provides a complete, step-by-step development plan for bu
   - Handle partial payments
 - [x] **Business Logic:**
   - Auto-calculate balance payable (Total - Amount Paid)
-  - Validate payment amounts
+  - Validate payment amounts with rounding tolerance (±0.01)
   - Support multiple payments over time
+  - Auto-add to raw material inventory on purchase
 
-### **Task 5.2: Purchase Management & Updates**
+### **Task 5.2: Purchase Management & Updates** ✅
 
-- [x] **Database Layer:**
+- [x] **Database Layer:
   - Create API routes for updating purchases
   - Implement payment update functionality
   - Add audit trail
@@ -252,9 +257,9 @@ This workflow document provides a complete, step-by-step development plan for bu
   - Update balance after payments
   - Maintain audit log
 
-### **Task 5.3: Supplier Outstanding Payables**
+### **Task 5.3: Supplier Outstanding Payables** ✅
 
-- [x] **Database Layer:**
+- [x] **Database Layer:
   - Create API to fetch outstanding payables by supplier
   - Aggregate all unpaid/partially paid purchases
 - [x] **UI Components:**
@@ -792,28 +797,30 @@ This workflow document provides a complete, step-by-step development plan for bu
 
 ---
 
-## **PHASE 20: DEPLOYMENT PREPARATION**
+## **PHASE 20: DEPLOYMENT PREPARATION** ✅
 
-### **Task 20.1: Production Configuration**
+### **Task 20.1: Production Configuration** ✅
 
-- [ ] Set up production environment variables
-- [ ] Configure production database
+- [x] Set up production environment variables
+- [x] Configure production database (HostGator MySQL)
 - [ ] Set up error monitoring (e.g., Sentry)
 - [ ] Configure logging
 
-### **Task 20.2: Build Optimization**
+### **Task 20.2: Build Optimization** ✅
 
-- [ ] Optimize production build
-- [ ] Minimize bundle size
-- [ ] Optimize images
+- [x] Optimize production build
+- [x] Fix build errors (TypeScript, ESLint)
+- [x] Update Next.js to 16.0.8 (security fix CVE-2025-66478)
 - [ ] Set up CDN (if needed)
 
-### **Task 20.3: Deployment**
+### **Task 20.3: Deployment** ✅
 
-- [ ] Choose hosting platform (Vercel, AWS, etc.)
-- [ ] Set up CI/CD pipeline
-- [ ] Deploy to staging environment
-- [ ] Deploy to production
+- [x] Choose hosting platform: **Vercel**
+- [x] Set up CI/CD pipeline (auto-deploy on push to main)
+- [x] Deploy to production
+- [x] Create deployment documentation (`DEPLOYMENT.md`)
+- [x] Database migration to production (HostGator MySQL)
+- [x] Seed production database with initial users
 - [ ] Set up monitoring and alerts
 
 ---
@@ -896,6 +903,34 @@ This workflow document provides a complete, step-by-step development plan for bu
 
 ---
 
-**Document Version:** 1.1  
-**Last Updated:** December 3, 2025  
-**Status:** In Progress - Phase 8 (Inventory) Complete
+**Document Version:** 1.2  
+**Last Updated:** December 11, 2025  
+**Status:** In Progress - Phases 1-8 Complete, Phase 20 (Deployment) Complete
+
+---
+
+## **RECENT UPDATES (December 2025)**
+
+### **Multi-Product Sales Feature**
+- Added `SaleItem` model to database schema
+- Rewrote sales form to support multiple products per transaction
+- Each sale now has a `saleCode` for identification
+- Products table displayed on sale detail page for printing
+- Inventory deducted per product item automatically
+
+### **Build & Type Fixes**
+- Fixed Next.js 15 params type issues (`Promise<{ id: string }>`)
+- Fixed Prisma 6 MySQL compatibility (`mode: 'insensitive'` not supported)
+- Fixed Zod validation error access (`.error.issues` not `.error.errors`)
+- Simplified ESLint rules to reduce build noise
+
+### **Validation Improvements**
+- Added rounding tolerance (±0.01) for payment validation
+- Fixed purchase form accepting approximate amounts
+
+### **Deployment to Vercel**
+- Created comprehensive `DEPLOYMENT.md` guide
+- Configured HostGator MySQL as production database
+- Fixed pnpm lockfile sync issues
+- Upgraded Next.js from 15.1.2 to 16.0.8 (security fix)
+- Successfully deployed to Vercel with auto-deploy on push
