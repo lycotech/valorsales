@@ -196,7 +196,7 @@ export default function AuditLogsPage() {
                   Creates
                 </Typography>
                 <Typography variant='h4' color='success.main'>
-                  {(stats.actionCounts.create || 0).toLocaleString()}
+                  {(stats.actionCounts?.create || 0).toLocaleString()}
                 </Typography>
               </CardContent>
             </Card>
@@ -208,7 +208,7 @@ export default function AuditLogsPage() {
                   Updates
                 </Typography>
                 <Typography variant='h4' color='info.main'>
-                  {(stats.actionCounts.update || 0).toLocaleString()}
+                  {(stats.actionCounts?.update || 0).toLocaleString()}
                 </Typography>
               </CardContent>
             </Card>
@@ -220,7 +220,7 @@ export default function AuditLogsPage() {
                   Deletes
                 </Typography>
                 <Typography variant='h4' color='error.main'>
-                  {(stats.actionCounts.delete || 0).toLocaleString()}
+                  {(stats.actionCounts?.delete || 0).toLocaleString()}
                 </Typography>
               </CardContent>
             </Card>
@@ -316,9 +316,9 @@ export default function AuditLogsPage() {
                     </TableCell>
                     <TableCell>
                       <Box>
-                        <Typography variant='body2'>{log.user.name}</Typography>
+                        <Typography variant='body2'>{log.user?.name || 'Unknown User'}</Typography>
                         <Typography variant='caption' color='text.secondary'>
-                          {log.user.email}
+                          {log.user?.email || '-'}
                         </Typography>
                       </Box>
                     </TableCell>
@@ -386,7 +386,7 @@ export default function AuditLogsPage() {
                   <Typography variant='caption' color='text.secondary'>
                     User
                   </Typography>
-                  <Typography>{selectedLog.user.name}</Typography>
+                  <Typography>{selectedLog.user?.name || 'Unknown User'}</Typography>
                 </Grid>
                 <Grid size={{ xs: 6 }}>
                   <Typography variant='caption' color='text.secondary'>
