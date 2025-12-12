@@ -185,7 +185,7 @@ export default function AuditLogsPage() {
                 <Typography color='text.secondary' variant='overline'>
                   Total Activities (30 days)
                 </Typography>
-                <Typography variant='h4'>{stats.totalLogs.toLocaleString()}</Typography>
+                <Typography variant='h4'>{(stats.totalLogs || 0).toLocaleString()}</Typography>
               </CardContent>
             </Card>
           </Grid>

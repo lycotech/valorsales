@@ -131,11 +131,11 @@ export default function TotalSalesReportPage() {
           title: 'Summary',
           type: 'summary',
           summaryItems: [
-            { label: 'Total Transactions', value: summary.totalTransactions },
-            { label: 'Quantity Sold', value: summary.totalQuantitySold.toLocaleString() },
-            { label: 'Total Revenue', value: `₦${summary.totalRevenue.toLocaleString()}` },
-            { label: 'Amount Collected', value: `₦${summary.totalPaid.toLocaleString()}` },
-            { label: 'Outstanding', value: `₦${summary.totalOutstanding.toLocaleString()}` }
+            { label: 'Total Transactions', value: summary.totalTransactions || 0 },
+            { label: 'Quantity Sold', value: (summary.totalQuantitySold || 0).toLocaleString() },
+            { label: 'Total Revenue', value: `₦${(summary.totalRevenue || 0).toLocaleString()}` },
+            { label: 'Amount Collected', value: `₦${(summary.totalPaid || 0).toLocaleString()}` },
+            { label: 'Outstanding', value: `₦${(summary.totalOutstanding || 0).toLocaleString()}` }
           ]
         },
         {
@@ -237,7 +237,7 @@ export default function TotalSalesReportPage() {
                 <Typography color='text.secondary' gutterBottom variant='body2'>
                   Quantity Sold
                 </Typography>
-                <Typography variant='h4'>{summary.totalQuantitySold.toLocaleString()}</Typography>
+                <Typography variant='h4'>{(summary.totalQuantitySold || 0).toLocaleString()}</Typography>
               </CardContent>
             </Card>
           </Grid>
@@ -248,7 +248,7 @@ export default function TotalSalesReportPage() {
                   Total Revenue
                 </Typography>
                 <Typography color='success.main' variant='h4'>
-                  ₦{summary.totalRevenue.toLocaleString()}
+                  ₦{(summary.totalRevenue || 0).toLocaleString()}
                 </Typography>
               </CardContent>
             </Card>
@@ -259,7 +259,7 @@ export default function TotalSalesReportPage() {
                 <Typography color='text.secondary' gutterBottom variant='body2'>
                   Amount Collected
                 </Typography>
-                <Typography variant='h4'>₦{summary.totalPaid.toLocaleString()}</Typography>
+                <Typography variant='h4'>₦{(summary.totalPaid || 0).toLocaleString()}</Typography>
               </CardContent>
             </Card>
           </Grid>
@@ -270,7 +270,7 @@ export default function TotalSalesReportPage() {
                   Outstanding
                 </Typography>
                 <Typography color='error' variant='h4'>
-                  ₦{summary.totalOutstanding.toLocaleString()}
+                  ₦{(summary.totalOutstanding || 0).toLocaleString()}
                 </Typography>
               </CardContent>
             </Card>
@@ -332,10 +332,10 @@ export default function TotalSalesReportPage() {
                         <TableRow key={method.paymentMode}>
                           <TableCell>{getPaymentModeLabel(method.paymentMode)}</TableCell>
                           <TableCell align='right'>{method.salesCount}</TableCell>
-                          <TableCell align='right'>₦{method.totalAmount.toLocaleString()}</TableCell>
+                          <TableCell align='right'>₦{(method.totalAmount || 0).toLocaleString()}</TableCell>
                           <TableCell align='right'>
-                            {summary.totalRevenue > 0
-                              ? ((method.totalAmount / summary.totalRevenue) * 100).toFixed(1)
+                            {(summary.totalRevenue || 0) > 0
+                              ? (((method.totalAmount || 0) / summary.totalRevenue) * 100).toFixed(1)
                               : 0}
                             %
                           </TableCell>
@@ -375,8 +375,8 @@ export default function TotalSalesReportPage() {
                       {periods.map((period, index) => (
                         <TableRow key={index}>
                           <TableCell>{formatPeriod(period.period)}</TableCell>
-                          <TableCell align='right'>{period.salesCount}</TableCell>
-                          <TableCell align='right'>₦{period.totalAmount.toLocaleString()}</TableCell>
+                          <TableCell align='right'>{period.salesCount || 0}</TableCell>
+                          <TableCell align='right'>₦{(period.totalAmount || 0).toLocaleString()}</TableCell>
                         </TableRow>
                       ))}
                       {periods.length === 0 && (
@@ -416,15 +416,15 @@ export default function TotalSalesReportPage() {
                   {periods.map((period, index) => (
                     <TableRow key={index}>
                       <TableCell>{formatPeriod(period.period)}</TableCell>
-                      <TableCell align='right'>{period.salesCount}</TableCell>
-                      <TableCell align='right'>₦{period.totalAmount.toLocaleString()}</TableCell>
-                      <TableCell align='right'>₦{period.totalPaid.toLocaleString()}</TableCell>
+                      <TableCell align='right'>{period.salesCount || 0}</TableCell>
+                      <TableCell align='right'>₦{(period.totalAmount || 0).toLocaleString()}</TableCell>
+                      <TableCell align='right'>₦{(period.totalPaid || 0).toLocaleString()}</TableCell>
                       <TableCell align='right'>
-                        <Typography color='error'>₦{period.totalOutstanding.toLocaleString()}</Typography>
+                        <Typography color='error'>₦{(period.totalOutstanding || 0).toLocaleString()}</Typography>
                       </TableCell>
                       <TableCell align='right'>
-                        {period.totalAmount > 0
-                          ? `${((period.totalPaid / period.totalAmount) * 100).toFixed(1)}%`
+                        {(period.totalAmount || 0) > 0
+                          ? `${(((period.totalPaid || 0) / period.totalAmount) * 100).toFixed(1)}%`
                           : '0%'}
                       </TableCell>
                     </TableRow>
