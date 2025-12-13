@@ -126,11 +126,11 @@ export default function SalesByProductPage() {
           title: 'Summary',
           type: 'summary',
           summaryItems: [
-            { label: 'Total Products', value: summary.totalProducts },
-            { label: 'Total Transactions', value: summary.totalTransactions },
-            { label: 'Total Quantity Sold', value: summary.totalQuantitySold.toLocaleString() },
-            { label: 'Total Revenue', value: `₦${summary.totalRevenue.toLocaleString()}` },
-            { label: 'Total Outstanding', value: `₦${summary.totalOutstanding.toLocaleString()}` }
+            { label: 'Total Products', value: summary.totalProducts || 0 },
+            { label: 'Total Transactions', value: summary.totalTransactions || 0 },
+            { label: 'Total Quantity Sold', value: (summary.totalQuantitySold || 0).toLocaleString() },
+            { label: 'Total Revenue', value: `₦${(summary.totalRevenue || 0).toLocaleString()}` },
+            { label: 'Total Outstanding', value: `₦${(summary.totalOutstanding || 0).toLocaleString()}` }
           ]
         },
         {
@@ -198,8 +198,8 @@ export default function SalesByProductPage() {
       headerName: 'Avg Price',
       width: 130,
       type: 'number',
-      valueGetter: (value, row) => (row.totalRevenue / row.totalQuantitySold).toFixed(2),
-      valueFormatter: value => `₦${parseFloat(value).toLocaleString()}`
+      valueGetter: (value, row) => ((row.totalQuantitySold || 0) > 0 ? (row.totalRevenue || 0) / row.totalQuantitySold : 0).toFixed(2),
+      valueFormatter: value => `₦${parseFloat(value || '0').toLocaleString()}`
     }
   ]
 
@@ -253,7 +253,7 @@ export default function SalesByProductPage() {
                 <Typography color='text.secondary' gutterBottom variant='body2'>
                   Quantity Sold
                 </Typography>
-                <Typography variant='h4'>{summary.totalQuantitySold.toLocaleString()}</Typography>
+                <Typography variant='h4'>{(summary.totalQuantitySold || 0).toLocaleString()}</Typography>
               </CardContent>
             </Card>
           </Grid>
@@ -264,7 +264,7 @@ export default function SalesByProductPage() {
                   Total Revenue
                 </Typography>
                 <Typography color='success.main' variant='h4'>
-                  ₦{summary.totalRevenue.toLocaleString()}
+                  ₦{(summary.totalRevenue || 0).toLocaleString()}
                 </Typography>
               </CardContent>
             </Card>
@@ -276,7 +276,7 @@ export default function SalesByProductPage() {
                   Outstanding
                 </Typography>
                 <Typography color='error' variant='h4'>
-                  ₦{summary.totalOutstanding.toLocaleString()}
+                  ₦{(summary.totalOutstanding || 0).toLocaleString()}
                 </Typography>
               </CardContent>
             </Card>
