@@ -34,16 +34,17 @@ model User {
 // ============================================
 
 model Customer {
-  id            String   @id @default(uuid())
-  customerCode  String   @unique
-  businessName  String
-  address       String   @db.Text
-  phone         String
-  location      String
-  creditBalance Decimal  @default(0) @db.Decimal(12, 2) // Excess payment balance
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  sales         Sale[]
+  id                String   @id @default(uuid())
+  customerCode      String   @unique
+  businessName      String
+  phone             String
+  location          String   @db.Text
+  contactPerson     String?
+  contactPersonPhone String?
+  creditBalance     Decimal  @default(0) @db.Decimal(12, 2) // Excess payment balance
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  sales             Sale[]
 
   @@map("customers")
   @@index([customerCode])

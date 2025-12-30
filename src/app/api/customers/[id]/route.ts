@@ -161,9 +161,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       where: { id },
       data: {
         ...(data.businessName && { businessName: data.businessName }),
-        ...(data.address && { address: data.address }),
         ...(data.phone && { phone: data.phone }),
-        ...(data.location && { location: data.location })
+        ...(data.location && { location: data.location }),
+        ...(data.contactPerson !== undefined && { contactPerson: data.contactPerson || null }),
+        ...(data.contactPersonPhone !== undefined && { contactPersonPhone: data.contactPersonPhone || null })
       }
     })
 

@@ -39,15 +39,17 @@ const CustomerForm = ({ customer, mode }: CustomerFormProps) => {
     defaultValues: customer
       ? {
           businessName: customer.businessName,
-          address: customer.address,
           phone: customer.phone,
-          location: customer.location
+          location: customer.location,
+          contactPerson: customer.contactPerson || '',
+          contactPersonPhone: customer.contactPersonPhone || ''
         }
       : {
           businessName: '',
-          address: '',
           phone: '',
-          location: ''
+          location: '',
+          contactPerson: '',
+          contactPersonPhone: ''
         }
   })
 
@@ -148,8 +150,42 @@ const CustomerForm = ({ customer, mode }: CustomerFormProps) => {
                 />
               </Grid>
 
-              {/* Location */}
+              {/* Contact Person */}
               <Grid item xs={12} md={6}>
+                <Controller
+                  name='contactPerson'
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label='Contact Person'
+                      fullWidth
+                      error={!!errors.contactPerson}
+                      helperText={errors.contactPerson?.message}
+                    />
+                  )}
+                />
+              </Grid>
+
+              {/* Contact Person Phone */}
+              <Grid item xs={12} md={6}>
+                <Controller
+                  name='contactPersonPhone'
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label='Contact Person Phone'
+                      fullWidth
+                      error={!!errors.contactPersonPhone}
+                      helperText={errors.contactPersonPhone?.message}
+                    />
+                  )}
+                />
+              </Grid>
+
+              {/* Location */}
+              <Grid item xs={12}>
                 <Controller
                   name='location'
                   control={control}
@@ -159,28 +195,10 @@ const CustomerForm = ({ customer, mode }: CustomerFormProps) => {
                       label='Location'
                       required
                       fullWidth
-                      error={!!errors.location}
-                      helperText={errors.location?.message}
-                    />
-                  )}
-                />
-              </Grid>
-
-              {/* Address */}
-              <Grid item xs={12}>
-                <Controller
-                  name='address'
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label='Address'
-                      required
-                      fullWidth
                       multiline
                       rows={3}
-                      error={!!errors.address}
-                      helperText={errors.address?.message}
+                      error={!!errors.location}
+                      helperText={errors.location?.message}
                     />
                   )}
                 />

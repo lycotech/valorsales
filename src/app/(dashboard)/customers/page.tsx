@@ -173,11 +173,18 @@ const CustomersPage = () => {
       sortable: false
     },
     {
-      field: 'address',
-      headerName: 'Address',
-      flex: 1,
-      minWidth: 200,
-      sortable: false
+      field: 'contactPerson',
+      headerName: 'Contact Person',
+      width: 150,
+      sortable: false,
+      renderCell: params => params.value || '-'
+    },
+    {
+      field: 'contactPersonPhone',
+      headerName: 'Contact Phone',
+      width: 150,
+      sortable: false,
+      renderCell: params => params.value || '-'
     },
     {
       field: 'actions',

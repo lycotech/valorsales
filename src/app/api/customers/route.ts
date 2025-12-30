@@ -52,9 +52,10 @@ export async function GET(request: NextRequest) {
           OR: [
             { businessName: { contains: search } },
             { customerCode: { contains: search } },
-            { address: { contains: search } },
             { phone: { contains: search } },
-            { location: { contains: search } }
+            { location: { contains: search } },
+            { contactPerson: { contains: search } },
+            { contactPersonPhone: { contains: search } }
           ]
         }
       : {}
@@ -180,9 +181,10 @@ export async function POST(request: NextRequest) {
       data: {
         customerCode,
         businessName: data.businessName,
-        address: data.address,
         phone: data.phone,
-        location: data.location
+        location: data.location,
+        contactPerson: data.contactPerson || null,
+        contactPersonPhone: data.contactPersonPhone || null
       }
     })
 

@@ -92,19 +92,30 @@ const CustomerDetailPage = async ({ params }: CustomerDetailPageProps) => {
               </div>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
               <div className='flex flex-col gap-1'>
                 <span className='text-sm text-textSecondary'>Location</span>
-                <span className='font-medium'>{customer.location}</span>
+                <span className='font-medium whitespace-pre-wrap'>{customer.location}</span>
               </div>
             </Grid>
 
-            <Grid item xs={12}>
-              <div className='flex flex-col gap-1'>
-                <span className='text-sm text-textSecondary'>Address</span>
-                <span className='font-medium whitespace-pre-wrap'>{customer.address}</span>
-              </div>
-            </Grid>
+            {customer.contactPerson && (
+              <Grid item xs={12} md={6}>
+                <div className='flex flex-col gap-1'>
+                  <span className='text-sm text-textSecondary'>Contact Person</span>
+                  <span className='font-medium'>{customer.contactPerson}</span>
+                </div>
+              </Grid>
+            )}
+
+            {customer.contactPersonPhone && (
+              <Grid item xs={12} md={6}>
+                <div className='flex flex-col gap-1'>
+                  <span className='text-sm text-textSecondary'>Contact Person Phone</span>
+                  <span className='font-medium'>{customer.contactPersonPhone}</span>
+                </div>
+              </Grid>
+            )}
 
             <Grid item xs={12} md={6}>
               <div className='flex flex-col gap-1'>

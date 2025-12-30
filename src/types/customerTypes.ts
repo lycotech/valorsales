@@ -13,24 +13,27 @@ import type { BaseEntity } from './commonTypes'
 export interface Customer extends BaseEntity {
   customerCode: string
   businessName: string
-  address: string
   phone: string
   location: string
+  contactPerson?: string | null
+  contactPersonPhone?: string | null
   creditBalance?: number
 }
 
 export interface CreateCustomerInput {
   businessName: string
-  address: string
   phone: string
   location: string
+  contactPerson?: string
+  contactPersonPhone?: string
 }
 
 export interface UpdateCustomerInput {
   businessName?: string
-  address?: string
   phone?: string
   location?: string
+  contactPerson?: string
+  contactPersonPhone?: string
 }
 
 export interface CustomerWithStats extends Customer {
@@ -57,12 +60,6 @@ export const createCustomerSchema = z.object({
     .min(2, 'Business name must be at least 2 characters')
     .max(255, 'Business name too long')
     .trim(),
-  address: z
-    .string()
-    .min(1, 'Address is required')
-    .min(5, 'Address must be at least 5 characters')
-    .max(500, 'Address too long')
-    .trim(),
   phone: z
     .string()
     .min(1, 'Phone number is required')
@@ -74,8 +71,21 @@ export const createCustomerSchema = z.object({
     .string()
     .min(1, 'Location is required')
     .min(2, 'Location must be at least 2 characters')
-    .max(255, 'Location too long')
+    .max(1000, 'Location too long')
+    .trim(),
+  contactPerson: z
+    .string()
+    .min(2, 'Contact person name must be at least 2 characters')
+    .max(255, 'Contact person name too long')
     .trim()
+    .optional(),
+  contactPersonPhone: z
+    .string()
+    .min(10, 'Contact person phone must be at least 10 characters')
+    .max(20, 'Contact person phone too long')
+    .regex(/^[0-9+\-\s()]+$/, 'Invalid phone number format')
+    .trim()
+    .optional()
 })
 
 export const updateCustomerSchema = z.object({
@@ -83,12 +93,6 @@ export const updateCustomerSchema = z.object({
     .string()
     .min(2, 'Business name must be at least 2 characters')
     .max(255, 'Business name too long')
-    .trim()
-    .optional(),
-  address: z
-    .string()
-    .min(5, 'Address must be at least 5 characters')
-    .max(500, 'Address too long')
     .trim()
     .optional(),
   phone: z
@@ -101,7 +105,20 @@ export const updateCustomerSchema = z.object({
   location: z
     .string()
     .min(2, 'Location must be at least 2 characters')
-    .max(255, 'Location too long')
+    .max(1000, 'Location too long')
+    .trim()
+    .optional(),
+  contactPerson: z
+    .string()
+    .min(2, 'Contact person name must be at least 2 characters')
+    .max(255, 'Contact person name too long')
+    .trim()
+    .optional(),
+  contactPersonPhone: z
+    .string()
+    .min(10, 'Contact person phone must be at least 10 characters')
+    .max(20, 'Contact person phone too long')
+    .regex(/^[0-9+\-\s()]+$/, 'Invalid phone number format')
     .trim()
     .optional()
 })

@@ -15,9 +15,10 @@ export interface CustomerReportItem {
   id: string
   customerCode: string
   businessName: string
-  address: string
   phone: string
   location: string
+  contactPerson?: string | null
+  contactPersonPhone?: string | null
   totalSales: number
   totalRevenue: number
   outstandingBalance: number
