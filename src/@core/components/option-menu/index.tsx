@@ -38,8 +38,8 @@ const IconButtonWrapper = (props: Pick<OptionsMenuType, 'tooltipProps'> & { chil
 const MenuItemWrapper = ({ children, option }: { children: ReactNode; option: OptionMenuItemType }) => {
   if (option.href) {
     return (
-      <Link href={option.href} {...option.linkProps}>
-        <Box>
+      <Link href={option.href}>
+        <Box component='span' {...option.linkProps}>
           {children}
         </Box>
       </Link>
