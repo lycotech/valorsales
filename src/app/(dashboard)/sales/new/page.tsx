@@ -40,7 +40,8 @@ export default function NewSalePage() {
       const result = await response.json()
 
       if (!response.ok) {
-        throw new Error(result.error || result.message || 'Failed to create sale')
+        // Prefer the detailed message from the API (e.g. inventory / stock errors)
+        throw new Error(result.message || result.error || 'Failed to create sale')
       }
 
       if (result.success) {
