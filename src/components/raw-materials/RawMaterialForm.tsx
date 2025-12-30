@@ -16,11 +16,34 @@ import {
   Typography,
   Alert,
   Grid,
-  Divider
+  Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText
 } from '@mui/material'
 
 import { createRawMaterialSchema, updateRawMaterialSchema } from '@/types/rawMaterialTypes'
 import type { CreateRawMaterialInput } from '@/types/rawMaterialTypes'
+
+// Unit options for raw materials
+const UNIT_OPTIONS = [
+  { value: 'kg', label: 'Kilograms (kg)' },
+  { value: 'g', label: 'Grams (g)' },
+  { value: 'piece', label: 'Piece' },
+  { value: 'portion', label: 'Portion' },
+  { value: 'bag', label: 'Bag' },
+  { value: 'sack', label: 'Sack' },
+  { value: 'carton', label: 'Carton' },
+  { value: 'box', label: 'Box' },
+  { value: 'bundle', label: 'Bundle' },
+  { value: 'pack', label: 'Pack' },
+  { value: 'liter', label: 'Liters (L)' },
+  { value: 'ml', label: 'Milliliters (mL)' },
+  { value: 'ton', label: 'Tons' },
+  { value: 'unit', label: 'Unit' }
+]
 
 interface RawMaterialFormProps {
   mode: 'create' | 'edit'
@@ -28,6 +51,12 @@ interface RawMaterialFormProps {
     id: string
     materialCode: string
     materialName: string
+    inventory?: {
+      minimumStock: number
+      maximumStock: number | null
+      reorderPoint: number
+      unit: string
+    }
   }
 }
 
@@ -45,9 +74,10 @@ export default function RawMaterialForm({ mode, rawMaterial }: RawMaterialFormPr
     defaultValues: {
       materialName: rawMaterial?.materialName || '',
       initialStock: 0,
-      minimumStock: 50,
-      maximumStock: 5000,
-      reorderPoint: 100
+      minimumStock: rawMaterial?.inventory?.minimumStock ?? 50,
+      maximumStock: rawMaterial?.inventory?.maximumStock ?? 5000,
+      reorderPoint: rawMaterial?.inventory?.reorderPoint ?? 100,
+      unit: rawMaterial?.inventory?.unit || 'kg'
     }
   })
 
@@ -119,7 +149,7 @@ export default function RawMaterialForm({ mode, rawMaterial }: RawMaterialFormPr
               />
             </Grid>
 
-            {mode === 'create' && (
+            {(mode === 'create' || mode === 'edit') && (
               <>
                 <Grid item xs={12}>
                   <Divider sx={{ my: 2 }}>
@@ -131,22 +161,45 @@ export default function RawMaterialForm({ mode, rawMaterial }: RawMaterialFormPr
 
                 <Grid item xs={12} sm={6} md={3}>
                   <Controller
-                    name='initialStock'
+                    name='unit'
                     control={control}
                     render={({ field }) => (
-                      <TextField
-                        {...field}
-                        fullWidth
-                        label='Initial Stock'
-                        type='number'
-                        inputProps={{ min: 0 }}
-                        onChange={e => field.onChange(Number(e.target.value))}
-                        error={!!errors.initialStock}
-                        helperText={errors.initialStock?.message || 'Starting inventory quantity (kg)'}
-                      />
+                      <FormControl fullWidth error={!!errors.unit}>
+                        <InputLabel>Unit of Measure</InputLabel>
+                        <Select {...field} label='Unit of Measure'>
+                          {UNIT_OPTIONS.map(option => (
+                            <MenuItem key={option.value} value={option.value}>
+                              {option.label}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                        {errors.unit && <FormHelperText>{errors.unit.message}</FormHelperText>}
+                        {!errors.unit && <FormHelperText>Select the unit for measuring this raw material</FormHelperText>}
+                      </FormControl>
                     )}
                   />
                 </Grid>
+
+                {mode === 'create' && (
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Controller
+                      name='initialStock'
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          fullWidth
+                          label='Initial Stock'
+                          type='number'
+                          inputProps={{ min: 0 }}
+                          onChange={e => field.onChange(Number(e.target.value))}
+                          error={!!errors.initialStock}
+                          helperText={errors.initialStock?.message || 'Starting inventory quantity'}
+                        />
+                      )}
+                    />
+                  </Grid>
+                )}
 
                 <Grid item xs={12} sm={6} md={3}>
                   <Controller

@@ -5,6 +5,8 @@ import { useMemo } from 'react'
 
 // MUI Imports
 import { useTheme } from '@mui/material/styles'
+import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography'
 
 // Third-party Imports
 import PerfectScrollbar from 'react-perfect-scrollbar'
@@ -96,7 +98,8 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
       role: user.role,
       userRoleCasted: userRole,
       originalCount: menuData.length,
-      filteredCount: filtered.length
+      filteredCount: filtered.length,
+      filteredItems: filtered.map(item => item.label || (item as any).isSection ? 'Section' : 'Item')
     })
 
     return filtered
@@ -118,15 +121,23 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
     >
       {/* Incase you also want to scroll NavHeader to scroll with Vertical Menu, remove NavHeader from above and paste it below this comment */}
       {/* Vertical Menu */}
-      <Menu
-        popoutMenuOffset={{ mainAxis: 17 }}
-        menuItemStyles={menuItemStyles(verticalNavOptions, theme)}
-        renderExpandIcon={({ open }) => <RenderExpandIcon open={open} transitionDuration={transitionDuration} />}
-        renderExpandedMenuItemIcon={{ icon: <i className='ri-circle-fill' /> }}
-        menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
-      >
-        <GenerateVerticalMenu menuData={filteredMenuData} />
-      </Menu>
+      {filteredMenuData.length > 0 ? (
+        <Menu
+          popoutMenuOffset={{ mainAxis: 17 }}
+          menuItemStyles={menuItemStyles(verticalNavOptions, theme)}
+          renderExpandIcon={({ open }) => <RenderExpandIcon open={open} transitionDuration={transitionDuration} />}
+          renderExpandedMenuItemIcon={{ icon: <i className='ri-circle-fill' /> }}
+          menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
+        >
+          <GenerateVerticalMenu menuData={filteredMenuData} />
+        </Menu>
+      ) : (
+        <Box sx={{ p: 3, textAlign: 'center' }}>
+          <Typography variant='body2' color='text.secondary'>
+            {loading ? 'Loading menu...' : !user ? 'Please log in' : 'No menu items available'}
+          </Typography>
+        </Box>
+      )}
     </ScrollWrapper>
   )
 }

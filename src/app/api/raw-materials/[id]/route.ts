@@ -147,19 +147,61 @@ export async function PUT(
       }
     }
 
-    // Update raw material
-    const updateData: any = {}
+    // Update raw material and inventory in transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Update raw material
+      const updateData: any = {}
 
-    if (data.materialName !== undefined) updateData.materialName = data.materialName
+      if (data.materialName !== undefined) updateData.materialName = data.materialName
 
-    const rawMaterial = await prisma.rawMaterial.update({
-      where: { id },
-      data: updateData
+      const rawMaterial = await tx.rawMaterial.update({
+        where: { id },
+        data: updateData
+      })
+
+      // Update inventory if inventory settings are provided
+      const inventoryUpdateData: any = {}
+
+      if (data.minimumStock !== undefined) inventoryUpdateData.minimumStock = data.minimumStock
+      if (data.maximumStock !== undefined) inventoryUpdateData.maximumStock = data.maximumStock
+      if (data.reorderPoint !== undefined) inventoryUpdateData.reorderPoint = data.reorderPoint
+      if (data.unit !== undefined) inventoryUpdateData.unit = data.unit
+
+      let inventory = null
+
+      if (Object.keys(inventoryUpdateData).length > 0) {
+        // Get or create inventory
+        inventory = await tx.rawMaterialInventory.findUnique({
+          where: { rawMaterialId: id }
+        })
+
+        if (inventory) {
+          inventory = await tx.rawMaterialInventory.update({
+            where: { rawMaterialId: id },
+            data: inventoryUpdateData
+          })
+        } else {
+          // Create inventory if it doesn't exist
+          inventory = await tx.rawMaterialInventory.create({
+            data: {
+              rawMaterialId: id,
+              quantity: 0,
+              minimumStock: data.minimumStock || 50,
+              maximumStock: data.maximumStock || null,
+              reorderPoint: data.reorderPoint || 100,
+              unit: data.unit || 'kg',
+              ...inventoryUpdateData
+            }
+          })
+        }
+      }
+
+      return { rawMaterial, inventory }
     })
 
     return NextResponse.json({
       success: true,
-      data: rawMaterial,
+      data: result.rawMaterial,
       message: 'Raw material updated successfully'
     })
   } catch (error) {

@@ -28,6 +28,11 @@ export interface CreateRawMaterialInput {
 
 export interface UpdateRawMaterialInput {
   materialName?: string
+  // Inventory settings (can be updated)
+  minimumStock?: number
+  maximumStock?: number | null
+  reorderPoint?: number
+  unit?: string
 }
 
 export interface RawMaterialWithStats extends RawMaterial {
@@ -88,6 +93,24 @@ export const updateRawMaterialSchema = z.object({
     .min(2, 'Material name must be at least 2 characters')
     .max(255, 'Material name too long')
     .trim()
+    .optional(),
+  // Inventory settings
+  minimumStock: z
+    .number()
+    .min(0, 'Minimum stock cannot be negative')
+    .optional(),
+  maximumStock: z
+    .number()
+    .positive('Maximum stock must be positive')
+    .optional()
+    .nullable(),
+  reorderPoint: z
+    .number()
+    .min(0, 'Reorder point cannot be negative')
+    .optional(),
+  unit: z
+    .string()
+    .max(20, 'Unit too long')
     .optional()
 })
 

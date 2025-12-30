@@ -15,6 +15,7 @@ export interface Supplier extends BaseEntity {
   name: string
   address: string
   phone: string
+  otherPhone?: string | null
   location: string
 }
 
@@ -32,6 +33,7 @@ export interface CreateSupplierInput {
   name: string
   address: string
   phone: string
+  otherPhone?: string
   location: string
   items?: Array<{
     itemName: string
@@ -42,6 +44,7 @@ export interface UpdateSupplierInput {
   name?: string
   address?: string
   phone?: string
+  otherPhone?: string
   location?: string
 }
 
@@ -99,6 +102,13 @@ export const createSupplierSchema = z.object({
     .max(20, 'Phone number too long')
     .regex(/^[0-9+\-\s()]+$/, 'Invalid phone number format')
     .trim(),
+  otherPhone: z
+    .string()
+    .min(10, 'Other phone number must be at least 10 characters')
+    .max(20, 'Other phone number too long')
+    .regex(/^[0-9+\-\s()]+$/, 'Invalid phone number format')
+    .trim()
+    .optional(),
   location: z
     .string()
     .min(1, 'Location is required')
@@ -128,6 +138,13 @@ export const updateSupplierSchema = z.object({
     .string()
     .min(10, 'Phone number must be at least 10 characters')
     .max(20, 'Phone number too long')
+    .regex(/^[0-9+\-\s()]+$/, 'Invalid phone number format')
+    .trim()
+    .optional(),
+  otherPhone: z
+    .string()
+    .min(10, 'Other phone number must be at least 10 characters')
+    .max(20, 'Other phone number too long')
     .regex(/^[0-9+\-\s()]+$/, 'Invalid phone number format')
     .trim()
     .optional(),

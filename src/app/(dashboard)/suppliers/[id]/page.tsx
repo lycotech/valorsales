@@ -77,6 +77,17 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
               </Typography>
             </Grid>
 
+            {supplier.otherPhone && (
+              <Grid item xs={12} md={6}>
+                <Typography variant='body2' color='text.secondary'>
+                  Other Phone Number
+                </Typography>
+                <Typography variant='body1' sx={{ fontWeight: 500 }}>
+                  {supplier.otherPhone}
+                </Typography>
+              </Grid>
+            )}
+
             <Grid item xs={12} md={6}>
               <Typography variant='body2' color='text.secondary'>
                 Location

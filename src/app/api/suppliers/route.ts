@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
             { supplierCode: { contains: search } },
             { address: { contains: search } },
             { phone: { contains: search } },
+            { otherPhone: { contains: search } },
             { location: { contains: search } }
           ]
         }
@@ -220,6 +221,7 @@ export async function POST(request: NextRequest) {
         name: data.name,
         address: data.address,
         phone: data.phone,
+        otherPhone: data.otherPhone || null,
         location: data.location,
         items: {
           create: itemsData

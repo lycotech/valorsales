@@ -17,5 +17,11 @@ export default async function EditSupplierPage({ params }: { params: Promise<{ i
     notFound()
   }
 
-  return <SupplierForm mode='edit' supplier={supplier} />
+  // Normalize null values to empty strings to prevent hydration mismatches
+  const normalizedSupplier = {
+    ...supplier,
+    otherPhone: supplier.otherPhone ?? ''
+  }
+
+  return <SupplierForm mode='edit' supplier={normalizedSupplier} />
 }

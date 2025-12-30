@@ -46,6 +46,7 @@ export default function SupplierForm({ mode, supplier }: SupplierFormProps) {
           name: supplier.name,
           address: supplier.address,
           phone: supplier.phone,
+          otherPhone: supplier.otherPhone ?? '',
           location: supplier.location,
           items: []
         }
@@ -53,6 +54,7 @@ export default function SupplierForm({ mode, supplier }: SupplierFormProps) {
           name: '',
           address: '',
           phone: '',
+          otherPhone: '',
           location: '',
           items: []
         }
@@ -149,6 +151,22 @@ export default function SupplierForm({ mode, supplier }: SupplierFormProps) {
                     error={!!errors.phone}
                     helperText={errors.phone?.message}
                     required={!isEditMode}
+                  />
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Controller
+                name='otherPhone'
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label='Other Phone Number (Optional)'
+                    error={!!errors.otherPhone}
+                    helperText={errors.otherPhone?.message}
                   />
                 )}
               />

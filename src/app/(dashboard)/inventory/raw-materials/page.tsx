@@ -246,10 +246,14 @@ export default function RawMaterialInventoryPage() {
                       </Typography>
                     </TableCell>
                     <TableCell align='right'>
-                      <Typography variant='body2'>{item.minimumStock}</Typography>
+                      <Typography variant='body2'>
+                        {item.minimumStock} {item.unit}
+                      </Typography>
                     </TableCell>
                     <TableCell align='right'>
-                      <Typography variant='body2'>{item.reorderPoint}</Typography>
+                      <Typography variant='body2'>
+                        {item.reorderPoint} {item.unit}
+                      </Typography>
                     </TableCell>
                     <TableCell>
                       <Box className='w-24'>

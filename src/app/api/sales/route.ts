@@ -302,6 +302,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Check inventory availability for ALL products first
+      const inventoryErrors: string[] = []
+
       for (const item of itemsWithProducts) {
         const inventory = await tx.productInventory.findUnique({
           where: { productId: item.productId }
@@ -313,16 +315,28 @@ export async function POST(request: NextRequest) {
         )
 
         if (!inventory) {
-          throw new Error(`No inventory record found for product ${item.product.productName}`)
+          inventoryErrors.push(`No inventory record found for product "${item.product.productName}"`)
+          continue
         }
 
         const availableQty = Number(inventory.quantity)
 
         if (availableQty < item.quantity) {
-          throw new Error(
-            `Insufficient stock for ${item.product.productName}. Available: ${availableQty}, Required: ${item.quantity}`
-          )
+          if (availableQty === 0) {
+            inventoryErrors.push(
+              `Product "${item.product.productName}" is out of stock. Current stock: 0 ${inventory.unit || 'units'}, Required: ${item.quantity} ${inventory.unit || 'units'}`
+            )
+          } else {
+            inventoryErrors.push(
+              `Insufficient stock for "${item.product.productName}". Available: ${availableQty} ${inventory.unit || 'units'}, Required: ${item.quantity} ${inventory.unit || 'units'}`
+            )
+          }
         }
+      }
+
+      // If there are any inventory errors, throw them before creating the sale
+      if (inventoryErrors.length > 0) {
+        throw new Error(inventoryErrors.join('; '))
       }
 
       // Create the main sale record
@@ -588,13 +602,26 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating sale:', error)
 
+    // Check if it's an inventory-related error (should be 400, not 500)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const isInventoryError =
+      errorMessage.includes('inventory') ||
+      errorMessage.includes('stock') ||
+      errorMessage.includes('Insufficient') ||
+      errorMessage.includes('Available') ||
+      errorMessage.includes('Required')
+
+    // Return 400 for business logic errors (inventory, validation), 500 for actual server errors
+    const status = isInventoryError ? 400 : 500
+    const errorType = isInventoryError ? 'Validation error' : 'Internal server error'
+
     return NextResponse.json(
       {
         success: false,
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        error: errorType,
+        message: errorMessage
       },
-      { status: 500 }
+      { status }
     )
   }
 }

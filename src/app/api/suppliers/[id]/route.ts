@@ -181,6 +181,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         ...(data.name && { name: data.name }),
         ...(data.address && { address: data.address }),
         ...(data.phone && { phone: data.phone }),
+        ...(data.otherPhone !== undefined && { otherPhone: data.otherPhone || null }),
         ...(data.location && { location: data.location })
       },
       include: {
