@@ -40,12 +40,16 @@ export default async function SupplierDetailPage({ params }: { params: Promise<{
               </Box>
             </Box>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button variant='outlined' component={Link} href='/suppliers'>
-                Back to List
-              </Button>
-              <Button variant='contained' component={Link} href={`/suppliers/edit/${supplier.id}`}>
-                Edit Supplier
-              </Button>
+              <Link href='/suppliers'>
+                <Button variant='outlined'>
+                  Back to List
+                </Button>
+              </Link>
+              <Link href={`/suppliers/edit/${supplier.id}`}>
+                <Button variant='contained'>
+                  Edit Supplier
+                </Button>
+              </Link>
             </Box>
           </Box>
 

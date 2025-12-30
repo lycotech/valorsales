@@ -33,12 +33,16 @@ export default async function RawMaterialDetailPage({ params }: { params: Promis
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant='h4'>Raw Material Details</Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button component={Link} href='/raw-materials' variant='outlined'>
-            Back to List
-          </Button>
-          <Button component={Link} href={`/raw-materials/edit/${rawMaterial.id}`} variant='contained'>
-            Edit Raw Material
-          </Button>
+          <Link href='/raw-materials'>
+            <Button variant='outlined'>
+              Back to List
+            </Button>
+          </Link>
+          <Link href={`/raw-materials/edit/${rawMaterial.id}`}>
+            <Button variant='contained'>
+              Edit Raw Material
+            </Button>
+          </Link>
         </Box>
       </Box>
 

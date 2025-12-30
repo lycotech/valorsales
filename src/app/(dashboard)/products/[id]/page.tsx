@@ -33,12 +33,16 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant='h4'>Product Details</Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button component={Link} href='/products' variant='outlined'>
-            Back to List
-          </Button>
-          <Button component={Link} href={`/products/edit/${product.id}`} variant='contained'>
-            Edit Product
-          </Button>
+          <Link href='/products'>
+            <Button variant='outlined'>
+              Back to List
+            </Button>
+          </Link>
+          <Link href={`/products/edit/${product.id}`}>
+            <Button variant='contained'>
+              Edit Product
+            </Button>
+          </Link>
         </Box>
       </Box>
 

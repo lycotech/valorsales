@@ -201,15 +201,15 @@ export default function SuppliersPage() {
       <CardContent>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
           <Typography variant='h4'>Suppliers</Typography>
-          <Button
-            variant='contained'
-            color='primary'
-            component={Link}
-            href='/suppliers/new'
-            startIcon={<i className='ri-add-line' />}
-          >
-            Add Supplier
-          </Button>
+          <Link href='/suppliers/new'>
+            <Button
+              variant='contained'
+              color='primary'
+              startIcon={<i className='ri-add-line' />}
+            >
+              Add Supplier
+            </Button>
+          </Link>
         </Box>
 
         {error && (

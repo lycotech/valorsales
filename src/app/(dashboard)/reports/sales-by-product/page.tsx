@@ -198,7 +198,8 @@ export default function SalesByProductPage() {
       headerName: 'Avg Price',
       width: 130,
       type: 'number',
-      valueGetter: (value, row) => ((row.totalQuantitySold || 0) > 0 ? (row.totalRevenue || 0) / row.totalQuantitySold : 0).toFixed(2),
+      valueGetter: (value, row) =>
+        ((row.totalQuantitySold || 0) > 0 ? (row.totalRevenue || 0) / row.totalQuantitySold : 0).toFixed(2),
       valueFormatter: value => `₦${parseFloat(value || '0').toLocaleString()}`
     }
   ]
