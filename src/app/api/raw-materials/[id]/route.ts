@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 
 import { prisma } from '@/lib/db/client'
 import { verifyToken } from '@/lib/auth/jwt'
+import { hasPermission, Resource, Action } from '@/lib/auth/permissions'
 import { updateRawMaterialSchema } from '@/types/rawMaterialTypes'
 
 // Helper function to verify auth from request
@@ -30,10 +31,8 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check permissions
-    const allowedRoles = ['admin', 'procurement', 'management']
-
-    if (!allowedRoles.includes(payload.role as any)) {
+    // Check permissions - Use RBAC system
+    if (!hasPermission(payload.role as any, Resource.RAW_MATERIALS, Action.READ)) {
       return NextResponse.json({ success: false, error: 'Forbidden: Insufficient permissions' }, { status: 403 })
     }
 
@@ -91,10 +90,8 @@ export async function PUT(
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check permissions - Admin and Procurement can update raw materials
-    const allowedRoles = ['admin', 'procurement']
-
-    if (!allowedRoles.includes(payload.role as any)) {
+    // Check permissions - Use RBAC system
+    if (!hasPermission(payload.role as any, Resource.RAW_MATERIALS, Action.UPDATE)) {
       return NextResponse.json({ success: false, error: 'Forbidden: Insufficient permissions' }, { status: 403 })
     }
 
@@ -234,9 +231,9 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check permissions - Only Admin can delete raw materials
-    if (payload.role !== 'admin') {
-      return NextResponse.json({ success: false, error: 'Forbidden: Only admins can delete raw materials' }, { status: 403 })
+    // Check permissions - Use RBAC system
+    if (!hasPermission(payload.role as any, Resource.RAW_MATERIALS, Action.DELETE)) {
+      return NextResponse.json({ success: false, error: 'Forbidden: Insufficient permissions' }, { status: 403 })
     }
 
     const { id } = await params

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 
 import { verifyToken } from '@/lib/auth/jwt'
+import { hasPermission, Resource, Action } from '@/lib/auth/permissions'
 import { prisma } from '@/lib/db/client'
 import { createRawMaterialSchema } from '@/types/rawMaterialTypes'
 
@@ -24,10 +25,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check permissions - Admin, Procurement can view raw materials
-    const allowedRoles = ['admin', 'procurement']
-
-    if (!allowedRoles.includes(payload.role as any)) {
+    // Check permissions - Use RBAC system
+    if (!hasPermission(payload.role as any, Resource.RAW_MATERIALS, Action.READ)) {
       return NextResponse.json({ success: false, error: 'Forbidden: Insufficient permissions' }, { status: 403 })
     }
 
@@ -114,10 +113,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check permissions - Admin and Procurement can create raw materials
-    const allowedRoles = ['admin', 'procurement']
-
-    if (!allowedRoles.includes(payload.role as any)) {
+    // Check permissions - Use RBAC system
+    if (!hasPermission(payload.role as any, Resource.RAW_MATERIALS, Action.CREATE)) {
       return NextResponse.json({ success: false, error: 'Forbidden: Insufficient permissions' }, { status: 403 })
     }
 
