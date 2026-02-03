@@ -76,7 +76,7 @@ export async function POST(
     // Calculate current amount paid (including existing payments)
     const existingPayments = sale.payments.reduce(
       (sum: number, payment: any) => sum + parseFloat(payment.amount.toString()),
-      parseFloat(sale.amountPaid.toString())
+      0 // Start from 0 to avoid double-counting (sale.amountPaid already includes all payments)
     )
 
     const newTotalPaid = existingPayments + data.amount
