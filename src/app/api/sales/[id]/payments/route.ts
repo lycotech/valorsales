@@ -46,7 +46,7 @@ export async function POST(
     const body = await request.json()
 
     // Validate request body
-    const validationResult = createSalePaymentSchema.safeParse(body)
+    const validationResult = createSalePaymentSchema.safeParse({ ...body, saleId })
 
     if (!validationResult.success) {
       return NextResponse.json(
