@@ -308,3 +308,39 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
 }
+
+// ============================================
+// FINANCIAL MANAGEMENT
+// ============================================
+
+model ExpenseCategory {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  expenses    Expense[]
+
+  @@map("expense_categories")
+  @@index([name])
+}
+
+model Expense {
+  id            String          @id @default(uuid())
+  amount        Decimal         @db.Decimal(12, 2)
+  date          DateTime
+  categoryId    String
+  category      ExpenseCategory @relation(fields: [categoryId], references: [id])
+  description   String?         @db.Text
+  paymentMethod String          // 'cash', 'transfer', 'pos', 'cheque', 'others'
+  reference     String?         // Invoice number, receipt number, etc.
+  createdBy     String?         // User ID who created this expense
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@map("expenses")
+  @@index([categoryId])
+  @@index([date])
+  @@index([createdBy])
+}
+

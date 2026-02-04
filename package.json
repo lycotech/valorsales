@@ -90,9 +90,11 @@
     "typescript": "5.5.4"
   },
   "resolutions": {
-    "rimraf": "^5.0.7"
+    "rimraf": "^5.0.7",
+    "entities": "^4.5.0"
   },
   "overrides": {
-    "rimraf": "^5.0.7"
+    "rimraf": "^5.0.7",
+    "entities": "^4.5.0"
   }
 }

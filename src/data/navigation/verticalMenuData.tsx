@@ -163,6 +163,28 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     ]
   },
   {
+    label: 'Financial',
+    isSection: true
+  },
+  {
+    label: 'Expenses',
+    href: '/financial/expenses',
+    icon: 'ri-wallet-3-line',
+    permission: {
+      resource: Resource.REPORTS,
+      action: Action.READ
+    }
+  },
+  {
+    label: 'Expense Categories',
+    href: '/financial/categories',
+    icon: 'ri-folder-line',
+    permission: {
+      resource: Resource.USERS,
+      action: Action.MANAGE
+    }
+  },
+  {
     label: 'Reports',
     isSection: true
   },
