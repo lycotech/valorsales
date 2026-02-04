@@ -197,6 +197,15 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     isSection: true
   },
   {
+    label: 'Profit & Loss',
+    href: '/reports/profit-loss',
+    icon: 'ri-line-chart-line',
+    permission: {
+      resource: Resource.REPORTS,
+      action: Action.READ
+    }
+  },
+  {
     label: 'Customer Reports',
     href: '/reports/customers',
     icon: 'ri-file-list-3-line',
