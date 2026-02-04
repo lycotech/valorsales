@@ -16,6 +16,8 @@ export type AuditEntity =
   | 'payment'
   | 'user'
   | 'inventory'
+  | 'expense_category'
+  | 'expense'
   | 'system'
 
 export interface AuditLogData {
