@@ -133,6 +133,14 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
           resource: Resource.INVENTORY,
           action: Action.READ
         }
+      },
+      {
+        label: 'Product Replacements',
+        href: '/inventory/replacements',
+        permission: {
+          resource: Resource.INVENTORY,
+          action: Action.READ
+        }
       }
     ]
   },

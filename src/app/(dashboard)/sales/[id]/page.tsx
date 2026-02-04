@@ -42,6 +42,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 
+import RecordReplacementModal from '@/components/RecordReplacementModal'
 import type { Sale, SalePayment, SaleItem } from '@/types/salesTypes'
 import type { Customer } from '@/types/customerTypes'
 import type { Product } from '@/types/productTypes'
@@ -74,6 +75,9 @@ export default function SaleDetailPage() {
   const [paymentNotes, setPaymentNotes] = useState<string>('')
   const [paymentLoading, setPaymentLoading] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
+
+  // Replacement modal state
+  const [replacementModalOpen, setReplacementModalOpen] = useState(false)
 
   // Fetch sale details
   const fetchSale = async () => {
@@ -220,6 +224,9 @@ export default function SaleDetailPage() {
             </Button>
             <Button variant='outlined' color='info' onClick={() => router.push(`/sales/${saleId}/edit`)}>
               Edit Sale
+            </Button>
+            <Button variant='outlined' color='warning' onClick={() => setReplacementModalOpen(true)}>
+              Record Replacement
             </Button>
             {canAddPayment && (
               <Button variant='contained' color='success' onClick={() => setPaymentDialogOpen(true)}>
@@ -566,6 +573,17 @@ export default function SaleDetailPage() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Record Replacement Modal */}
+        <RecordReplacementModal
+          open={replacementModalOpen}
+          onClose={() => setReplacementModalOpen(false)}
+          sale={sale}
+          onSuccess={() => {
+            // Refresh sale data after replacement
+            fetchSale()
+          }}
+        />
       </Box>
     </LocalizationProvider>
   )
