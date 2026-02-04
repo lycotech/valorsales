@@ -19,7 +19,13 @@ import type { Sale, Product, SaleItem } from '@prisma/client'
 interface RecordReplacementModalProps {
   open: boolean
   onClose: () => void
-  sale: (Sale & { items?: SaleItem[]; product?: Product | null }) | null
+  sale: {
+    id: string
+    saleCode?: string | null
+    productId?: string | null
+    product?: Pick<Product, 'productName'> | null
+    items?: Array<{ productId: string }>
+  } | null
   onSuccess?: () => void
 }
 
