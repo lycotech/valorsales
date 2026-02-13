@@ -48,7 +48,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
     const page = parseInt(searchParams.get('page') || '1')
-    const pageSize = parseInt(searchParams.get('pageSize') || '10')
+    // Accept both 'limit' and 'pageSize' for compatibility (limit takes precedence)
+    const limit = searchParams.get('limit')
+    const pageSize = limit ? parseInt(limit) : parseInt(searchParams.get('pageSize') || '10')
     const skip = (page - 1) * pageSize
 
     // 4. Build where clause for search

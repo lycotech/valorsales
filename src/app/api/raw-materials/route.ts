@@ -34,7 +34,9 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const search = searchParams.get('search') || ''
     const page = parseInt(searchParams.get('page') || '1')
-    const pageSize = parseInt(searchParams.get('pageSize') || '10')
+    // Accept both 'limit' and 'pageSize' for compatibility (limit takes precedence)
+    const limit = searchParams.get('limit')
+    const pageSize = limit ? parseInt(limit) : parseInt(searchParams.get('pageSize') || '10')
 
     // Build where clause for search (MySQL is case-insensitive by default)
     const where = search
