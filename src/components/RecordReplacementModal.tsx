@@ -64,13 +64,15 @@ const RecordReplacementModal = ({ open, onClose, sale, onSuccess }: RecordReplac
 
     // Multi-product items
     if (sale.items && sale.items.length > 0) {
-      // We need to fetch product details for items
-      // For now, we'll just use the productId
-      sale.items.forEach(item => {
+      sale.items.forEach((item: any) => {
         if (!productList.find(p => p.id === item.productId)) {
+          // Use actual product data if available, otherwise fallback to productId
+          const productName = item.product?.productName || item.product?.name || `Product ${item.productId.substring(0, 8)}`
+          const productCode = item.product?.productCode || item.product?.code || ''
+
           productList.push({
             id: item.productId,
-            name: `Product ${item.productId.substring(0, 8)}...`
+            name: productCode ? `${productCode} - ${productName}` : productName
           })
         }
       })
