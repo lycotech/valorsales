@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 // MUI Imports
 import { useTheme } from '@mui/material/styles'
@@ -57,6 +57,13 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
   const verticalNavOptions = useVerticalNav()
   const { user, loading } = useSession()
 
+  // Use a mounted state to prevent SSR/CSR mismatches
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   // Vars
   const { isBreakpointReached, transitionDuration } = verticalNavOptions
 
@@ -64,46 +71,35 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
 
   // Filter menu data based on user permissions
   const filteredMenuData = useMemo(() => {
+    // Until client has mounted, return empty to match SSR output
+    if (!mounted) return []
+
     const menuData = verticalMenuData()
 
-    console.log('📋 Menu generation:', {
-      loading,
-      hasUser: !!user,
-      userRole: user?.role,
-      menuItemsCount: menuData.length
-    })
-
     // While loading, show empty menu to prevent flash
-    if (loading) {
-      console.log('⏳ Loading session, showing empty menu')
-
-      return []
-    }
+    if (loading) return []
 
     // If no user after loading, return empty menu
-    if (!user) {
-      console.log('❌ No user, showing empty menu')
-
-      return []
-    }
+    if (!user) return []
 
     // Filter based on user role (cast string to UserRole enum)
     const userRole = user.role as UserRole
 
-    console.log('🔄 About to filter menu:', { userRole, userRoleType: typeof userRole })
+    return filterMenuByPermissions(menuData, userRole)
+  }, [user, loading, mounted])
 
-    const filtered = filterMenuByPermissions(menuData, userRole)
-
-    console.log('✅ Menu filtered:', {
-      role: user.role,
-      userRoleCasted: userRole,
-      originalCount: menuData.length,
-      filteredCount: filtered.length,
-      filteredItems: filtered.map(item => item.label || (item as any).isSection ? 'Section' : 'Item')
-    })
-
-    return filtered
-  }, [user, loading])
+  // During SSR and initial hydration, render a consistent loading placeholder
+  if (!mounted) {
+    return (
+      <div className='bs-full overflow-y-auto overflow-x-hidden'>
+        <Box sx={{ p: 3, textAlign: 'center' }}>
+          <Typography variant='body2' color='text.secondary'>
+            Loading menu...
+          </Typography>
+        </Box>
+      </div>
+    )
+  }
 
   return (
     // eslint-disable-next-line lines-around-comment

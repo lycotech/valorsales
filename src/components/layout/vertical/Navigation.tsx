@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // Next Imports
 import Link from 'next/link'
@@ -73,6 +73,13 @@ const Navigation = (props: Props) => {
   const { mode: muiMode, systemMode: muiSystemMode } = useColorScheme()
   const theme = useTheme()
 
+  // Use mounted state to avoid SSR/CSR color-scheme mismatch
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   // Refs
   const shadowRef = useRef(null)
 
@@ -80,7 +87,8 @@ const Navigation = (props: Props) => {
   const { isCollapsed, isHovered, collapseVerticalNav, isBreakpointReached } = verticalNavOptions
   const isSemiDark = settings.semiDark
 
-  const currentMode = muiMode === 'system' ? muiSystemMode : muiMode || mode
+  // During SSR, use the server-provided mode; after mount, use the client-resolved mode
+  const currentMode = mounted ? (muiMode === 'system' ? muiSystemMode : muiMode || mode) : mode
 
   const isDark = currentMode === 'dark'
 

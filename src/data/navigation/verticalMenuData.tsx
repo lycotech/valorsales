@@ -260,6 +260,15 @@ const verticalMenuData = (): VerticalMenuDataType[] => [
     }
   },
   {
+    label: 'Total Expense Report',
+    href: '/reports/total-expenses',
+    icon: 'ri-money-dollar-box-line',
+    permission: {
+      resource: Resource.REPORTS,
+      action: Action.READ
+    }
+  },
+  {
     label: 'Settings',
     isSection: true
   },
