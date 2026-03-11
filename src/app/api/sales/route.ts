@@ -130,6 +130,7 @@ export async function GET(request: NextRequest) {
       quantity: sale.quantity ? parseFloat(sale.quantity.toString()) : null,
       price: sale.price ? parseFloat(sale.price.toString()) : null,
       total: parseFloat(sale.total.toString()),
+      discount: sale.discount ? parseFloat(sale.discount.toString()) : 0,
       amountPaid: parseFloat(sale.amountPaid.toString()),
       balance: parseFloat(sale.balance.toString()),
       paymentCount: sale._count.payments,
@@ -256,6 +257,10 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Apply discount
+    const discount = data.discount || 0
+    total = Math.max(0, total - discount)
+
     // Check if using credit balance
     const currentCreditBalance = parseFloat(customer.creditBalance.toString())
     const useCreditBalance = body.useCreditBalance && currentCreditBalance > 0
@@ -348,6 +353,7 @@ export async function POST(request: NextRequest) {
           quantity: aggregateQuantity,
           price: averagePrice,
           total,
+          discount,
           supplyDate: data.supplyDate,
           paymentMode: data.paymentMode,
           amountPaid: amountForThisSale,
@@ -583,6 +589,7 @@ export async function POST(request: NextRequest) {
           quantity: saleResult.sale.quantity ? parseFloat(saleResult.sale.quantity.toString()) : null,
           price: saleResult.sale.price ? parseFloat(saleResult.sale.price.toString()) : null,
           total: parseFloat(saleResult.sale.total.toString()),
+          discount: saleResult.sale.discount ? parseFloat(saleResult.sale.discount.toString()) : 0,
           amountPaid: parseFloat(saleResult.sale.amountPaid.toString()),
           balance: parseFloat(saleResult.sale.balance.toString()),
           items: saleResponse?.items.map(item => ({

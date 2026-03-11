@@ -381,16 +381,52 @@ export default function SaleDetailPage() {
               <CardContent>
                 <Box mb={2}>
                   <Typography variant='caption' color='text.secondary'>
-                    Total Amount
+                    {Number(sale.discount) > 0 ? 'Subtotal' : 'Total Amount'}
                   </Typography>
                   <Typography variant='h5' fontWeight={600}>
                     ₦
-                    {Number(sale.total).toLocaleString('en-NG', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2
-                    })}
+                    {Number(sale.discount) > 0
+                      ? (Number(sale.total) + Number(sale.discount)).toLocaleString('en-NG', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })
+                      : Number(sale.total).toLocaleString('en-NG', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })
+                    }
                   </Typography>
                 </Box>
+
+                {Number(sale.discount) > 0 && (
+                  <>
+                    <Box mb={2}>
+                      <Typography variant='caption' color='error.main'>
+                        Discount
+                      </Typography>
+                      <Typography variant='h6' color='error.main' fontWeight={500}>
+                        -₦
+                        {Number(sale.discount).toLocaleString('en-NG', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })}
+                      </Typography>
+                    </Box>
+
+                    <Box mb={2}>
+                      <Typography variant='caption' color='text.secondary'>
+                        Net Total
+                      </Typography>
+                      <Typography variant='h5' fontWeight={700} color='primary'>
+                        ₦
+                        {Number(sale.total).toLocaleString('en-NG', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })}
+                      </Typography>
+                    </Box>
+                  </>
+                )}
 
                 <Box mb={2}>
                   <Typography variant='caption' color='text.secondary'>

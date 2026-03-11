@@ -200,6 +200,7 @@ model Sale {
   items       SaleItem[]
   // Totals
   total       Decimal       @db.Decimal(12, 2)
+  discount    Decimal       @default(0) @db.Decimal(12, 2)
   supplyDate  DateTime
   paymentMode String        // 'cash', 'transfer', 'pos', 'credit', 'others'
   amountPaid  Decimal       @db.Decimal(12, 2)

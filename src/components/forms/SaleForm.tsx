@@ -55,6 +55,7 @@ const multiProductFormSchema = z.object({
   supplyDate: z.coerce.date(),
   paymentMode: z.enum(['cash', 'transfer', 'pos', 'credit', 'others']),
   amountPaid: z.number().min(0, 'Amount paid cannot be negative').max(999999999.99, 'Amount paid too large'),
+  discount: z.number().min(0, 'Discount cannot be negative').max(999999999.99, 'Discount too large').optional().default(0),
   paymentDate: z.coerce.date().optional().nullable()
 }).refine(
   data => {
@@ -138,6 +139,7 @@ export default function SaleForm({ sale, onSubmit, onCancel, isLoading, error }:
             supplyDate: new Date(),
             paymentMode: 'cash',
             amountPaid: 0,
+            discount: 0,
             paymentDate: undefined
           }
   })
@@ -151,6 +153,7 @@ export default function SaleForm({ sale, onSubmit, onCancel, isLoading, error }:
   const watchItems = watch('items')
   const watchAmountPaid = watch('amountPaid')
   const watchPaymentMode = watch('paymentMode')
+  const watchDiscount = watch('discount')
   const watchCustomerId = watch('customerId')
 
   // Calculate totals
@@ -247,7 +250,9 @@ export default function SaleForm({ sale, onSubmit, onCancel, isLoading, error }:
 
   // Auto-calculate total, balance, and status
   useEffect(() => {
-    const total = calculateTotal()
+    const subtotal = calculateTotal()
+    const discount = Number(watchDiscount) || 0
+    const total = Math.max(0, subtotal - discount)
     const amountPaid = Number(watchAmountPaid) || 0
 
     // If using credit balance, include it in the effective payment
@@ -271,7 +276,7 @@ export default function SaleForm({ sale, onSubmit, onCancel, isLoading, error }:
     } else {
       setCalculatedStatus('paid')
     }
-  }, [watchItems, watchAmountPaid, useCreditBalance, customerCreditBalance, calculateTotal])
+  }, [watchItems, watchAmountPaid, watchDiscount, useCreditBalance, customerCreditBalance, calculateTotal])
 
   // Add item to the items list
   const handleAddItem = () => {
@@ -596,18 +601,47 @@ export default function SaleForm({ sale, onSubmit, onCancel, isLoading, error }:
                             </TableRow>
                           )
                         })}
-                        {/* Total Row */}
+                        {/* Subtotal Row */}
                         <TableRow sx={{ backgroundColor: 'action.hover' }}>
                           <TableCell colSpan={3}>
-                            <Typography variant='subtitle2' fontWeight={600}>Total</Typography>
+                            <Typography variant='subtitle2' fontWeight={600}>
+                              {(Number(watchDiscount) || 0) > 0 ? 'Subtotal' : 'Total'}
+                            </Typography>
                           </TableCell>
                           <TableCell align='right'>
                             <Typography variant='subtitle2' fontWeight={600} color='primary'>
-                              ₦{calculatedTotal.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              ₦{calculateTotal().toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </Typography>
                           </TableCell>
                           <TableCell />
                         </TableRow>
+                        {/* Discount Row */}
+                        {(Number(watchDiscount) || 0) > 0 && (
+                          <>
+                            <TableRow>
+                              <TableCell colSpan={3}>
+                                <Typography variant='subtitle2' color='error.main'>Discount</Typography>
+                              </TableCell>
+                              <TableCell align='right'>
+                                <Typography variant='subtitle2' color='error.main'>
+                                  -₦{(Number(watchDiscount) || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </Typography>
+                              </TableCell>
+                              <TableCell />
+                            </TableRow>
+                            <TableRow sx={{ backgroundColor: 'action.selected' }}>
+                              <TableCell colSpan={3}>
+                                <Typography variant='subtitle2' fontWeight={700}>Net Total</Typography>
+                              </TableCell>
+                              <TableCell align='right'>
+                                <Typography variant='subtitle2' fontWeight={700} color='primary'>
+                                  ₦{calculatedTotal.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </Typography>
+                              </TableCell>
+                              <TableCell />
+                            </TableRow>
+                          </>
+                        )}
                       </TableBody>
                     </Table>
                   </Paper>
@@ -624,6 +658,26 @@ export default function SaleForm({ sale, onSubmit, onCancel, isLoading, error }:
                   </Alert>
                 </Grid>
               )}
+
+              {/* Discount */}
+              <Grid item xs={12} md={6}>
+                <Controller
+                  name='discount'
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      label='Discount (₦)'
+                      type='number'
+                      inputProps={{ min: 0, step: 0.01 }}
+                      error={!!errors.discount}
+                      helperText={errors.discount?.message?.toString() || 'Optional discount applied to the sale total'}
+                      onChange={e => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
+                    />
+                  )}
+                />
+              </Grid>
 
               <Grid item xs={12}>
                 <Divider sx={{ my: 1 }}>

@@ -85,6 +85,7 @@ export async function GET(
         quantity: sale.quantity ? parseFloat(sale.quantity.toString()) : null,
         price: sale.price ? parseFloat(sale.price.toString()) : null,
         total: parseFloat(sale.total.toString()),
+        discount: sale.discount ? parseFloat(sale.discount.toString()) : 0,
         amountPaid: parseFloat(sale.amountPaid.toString()),
         balance: parseFloat(sale.balance.toString()),
         product: sale.product ? {
@@ -270,6 +271,7 @@ export async function PUT(
         quantity: sale.quantity ? parseFloat(sale.quantity.toString()) : null,
         price: sale.price ? parseFloat(sale.price.toString()) : null,
         total: parseFloat(sale.total.toString()),
+        discount: sale.discount ? parseFloat(sale.discount.toString()) : 0,
         amountPaid: parseFloat(sale.amountPaid.toString()),
         balance: parseFloat(sale.balance.toString())
       },

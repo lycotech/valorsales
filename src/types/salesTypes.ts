@@ -31,6 +31,7 @@ export interface Sale extends BaseEntity {
   quantity: number
   price: number
   total: number
+  discount: number
   supplyDate: Date
   paymentMode: PaymentMode
   amountPaid: number
@@ -67,6 +68,7 @@ export interface CreateSaleInput {
   supplyDate: Date | string
   paymentMode: PaymentMode
   amountPaid: number
+  discount?: number
   paymentDate?: Date | string | null
   useCreditBalance?: boolean  // Whether to use customer's credit balance
 }
@@ -88,6 +90,7 @@ export interface UpdateSaleInput {
   productId?: string
   quantity?: number
   price?: number
+  discount?: number
   supplyDate?: Date | string
   paymentMode?: PaymentMode
   amountPaid?: number
@@ -156,6 +159,12 @@ export const createSaleSchema = z
       .number()
       .min(0, 'Amount paid cannot be negative')
       .max(999999999.99, 'Amount paid too large'),
+    discount: z
+      .number()
+      .min(0, 'Discount cannot be negative')
+      .max(999999999.99, 'Discount too large')
+      .optional()
+      .default(0),
     paymentDate: z.coerce.date().optional().nullable(),
     useCreditBalance: z.boolean().optional().default(false)
   })
@@ -188,6 +197,11 @@ export const updateSaleSchema = z
       .number()
       .positive('Price must be positive')
       .max(999999999.99, 'Price too large')
+      .optional(),
+    discount: z
+      .number()
+      .min(0, 'Discount cannot be negative')
+      .max(999999999.99, 'Discount too large')
       .optional(),
     supplyDate: z.coerce.date().optional(),
     paymentMode: paymentModeSchema.optional(),

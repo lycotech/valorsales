@@ -184,6 +184,16 @@ export default function SalesListPage() {
         `₦${Number(params).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     },
     {
+      field: 'discount',
+      headerName: 'Discount',
+      width: 110,
+      type: 'number',
+      valueFormatter: params => {
+        const val = Number(params)
+        return val > 0 ? `₦${val.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'
+      }
+    },
+    {
       field: 'amountPaid',
       headerName: 'Paid',
       width: 130,
